@@ -17,6 +17,12 @@
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       }
+    },
+    {
+      "name": "clang",
+      "displayName": "Clang-cl (Visual Studio 2026 x64)",
+      "inherits": "msvc",
+      "toolset": "ClangCL"
     }
   ],
   "buildPresets": [
@@ -28,6 +34,16 @@
     {
       "name": "msvc-release",
       "configurePreset": "msvc",
+      "configuration": "Release"
+    },
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang",
+      "configuration": "Debug"
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang",
       "configuration": "Release"
     }
   ]
