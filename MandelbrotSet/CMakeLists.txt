@@ -130,3 +130,27 @@ elseif(MSVC)
 		/Zc:__cplusplus
 	)
 endif()
+
+set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders)
+set(SHADER_SOURCES
+      ${SHADER_DIR}/vertexShader.vert
+      ${SHADER_DIR}/fragmentShader.frag
+      ${SHADER_DIR}/computeShader.comp
+)
+
+set(SPIRV_FILES "")
+foreach(SHADER ${SHADER_SOURCES})
+      get_filename_component(SHADER_NAME ${SHADER} NAME_WE)
+      set(SPIRV ${SHADER_DIR}/${SHADER_NAME}.spv)
+      add_custom_command(
+              OUTPUT ${SPIRV}
+              COMMAND Vulkan::glslc ${SHADER} -o ${SPIRV}
+              DEPENDS ${SHADER}
+              COMMENT "Compiling shader ${SHADER_NAME}"
+              VERBATIM
+      )
+      list(APPEND SPIRV_FILES ${SPIRV})
+endforeach()
+
+add_custom_target(shaders DEPENDS ${SPIRV_FILES})
+add_dependencies(vulkan_mandelbrot_renderer shaders)
