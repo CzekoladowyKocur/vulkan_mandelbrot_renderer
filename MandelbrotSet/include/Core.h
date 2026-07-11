@@ -40,7 +40,7 @@ public:
 			delete[] m_Data;
 
 		m_Size = size;
-		m_Data = (void*)data;
+		m_Data = reinterpret_cast<Byte_t*>(const_cast<void*>(data));
 	}
 
 	void Allocate(const std::size_t size)
@@ -52,7 +52,7 @@ public:
 		m_Data = new Byte_t[size];
 	}
 
-	void Write(const std::size_t size, const void* data, const std::size_t offset = 0)
+	void Write(const std::size_t size, const void* data)
 	{
 		assert(m_Size >= size);
 		memcpy(m_Data, data, size);
@@ -76,6 +76,6 @@ public:
 		return m_Size;
 	}
 private:
-	void* m_Data;
+	Byte_t* m_Data;
 	std::size_t m_Size;
 };

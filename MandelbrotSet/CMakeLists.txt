@@ -15,18 +15,21 @@ FetchContent_Declare(
 	glm
 	GIT_REPOSITORY https://github.com/g-truc/glm.git
 	GIT_TAG 8d1fd52e5ab5590e2c81768ace50c72bae28f2ed # v1.0.3
+	SYSTEM
 )
 
 FetchContent_Declare(
 	stb
 	GIT_REPOSITORY https://github.com/nothings/stb.git
 	GIT_TAG 31c1ad37456438565541f4919958214b6e762fb4
+	SYSTEM
 )
 
 FetchContent_Declare(
 	lodepng
 	GIT_REPOSITORY https://github.com/lvandeve/lodepng.git
 	GIT_TAG ed6fe5825c6a4fbb7f58ab35a4231c7543cd452a
+	SYSTEM
 )
 
 FetchContent_MakeAvailable(
@@ -74,3 +77,56 @@ if(MSVC)
 	)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(vulkan_mandelbrot_renderer PRIVATE
+		/clang:-Werror
+		/clang:-Wall
+		/clang:-Wextra
+		/clang:-Wshadow
+		/clang:-Wconversion
+		/clang:-Wimplicit-fallthrough
+		/clang:-Wabstract-vbase-init
+		/clang:-Wctor-dtor-privacy
+		/clang:-Wdelete-non-virtual-dtor
+		/clang:-Wtautological-compare
+		/clang:-Wuninitialized
+		/clang:-Wloop-analysis
+		/clang:-Wrange-loop-construct
+		/clang:-Wthread-safety
+		/clang:-Wno-c++98-compat
+		/clang:-Wno-c++98-compat-pedantic
+		/clang:-Wno-old-style-cast
+		/clang:-Wno-newline-eof
+		/clang:-Wno-error=delete-incomplete
+	)
+elseif(MSVC)
+	target_compile_options(vulkan_mandelbrot_renderer PRIVATE
+		/WX
+		/W4
+		/permissive-
+		/w14242
+		/w14254
+		/w14263
+		/w14265
+		/w14287
+		/w14296
+		/w14311
+		/w14545
+		/w14546
+		/w14547
+		/w14549
+		/w14555
+		/w14619
+		/w14640
+		/w14826
+		/w14905
+		/w14906
+		/w14928
+		/w14062
+		/w14456
+		/w14457
+		/w14458
+		/utf-8
+		/Zc:__cplusplus
+	)
+endif()

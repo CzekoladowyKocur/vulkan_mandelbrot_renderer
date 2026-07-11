@@ -1,4 +1,4 @@
-#pragma once
+#include <string_view>
 #include "include\Application.h"
 #include "include\Platform.h"
 #include "include\Input.h"
@@ -24,7 +24,6 @@ namespace Utilities {
 	INTERNALSCOPE const std::vector<const char*> RequiredExtensions = { "VK_KHR_win32_surface", "VK_KHR_surface" };
 	INTERNALSCOPE const std::vector<const char*> RequestedLayers = {};
 	#endif
-	INTERNALSCOPE const std::string_view RetrieveVendorFromID(const uint32_t vendorID);
 	
 	/* Logical Device */
 	INTERNALSCOPE const std::vector<const char*> RequiredDeviceExtensions{
@@ -80,10 +79,10 @@ VulkanApp::VulkanApp(const ERenderMethod renderMethod, HINSTANCE hInstance, cons
 	m_UBOBuffer(),
 	m_VertexShaderModule(VK_NULL_HANDLE),
 	m_FragmentShaderModule(VK_NULL_HANDLE),
-	m_GraphicsPipelineUBOBufferDescriptorSetLayout(VK_NULL_HANDLE),
-	m_GraphicsPipelineColorPaletteDescriptorSetLayout(VK_NULL_HANDLE),
 	m_GraphicsPipeline(VK_NULL_HANDLE),
 	m_GraphicsPipelineLayout(VK_NULL_HANDLE),
+	m_GraphicsPipelineUBOBufferDescriptorSetLayout(VK_NULL_HANDLE),
+	m_GraphicsPipelineColorPaletteDescriptorSetLayout(VK_NULL_HANDLE),
 	m_GraphicsPipelineDescriptorPool(VK_NULL_HANDLE),
 	m_GraphicsPipelineUBOBufferDescriptorSet(VK_NULL_HANDLE),
 	m_GraphicsPipelineColorPaletteDescriptorSet(VK_NULL_HANDLE),
@@ -211,7 +210,7 @@ bool VulkanApp::Run()
 		const double deltaTime = Platform::GetAbsoluteTime() - timer;
 		timer = Platform::GetAbsoluteTime();
 
-		UpdateFrameData(deltaTime);
+		UpdateFrameData(static_cast<float>(deltaTime));
 		DrawFrame();
 	}
 
@@ -399,6 +398,11 @@ void VulkanApp::OnEvent(Event& event)
 			printf("Window resized: [width, height]: %d, %d\n", windowWidth, windowHeight);
 			break;
 		}
+
+		default:
+		{
+			break;
+		}
 	}
 }
 
@@ -530,7 +534,7 @@ bool VulkanApp::CreateSurface()
 		&m_Surface));
 
 	VkBool32 supported;
-	vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, m_QueueIndices.Graphics, m_Surface, &supported);
+	vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, static_cast<uint32_t>(m_QueueIndices.Graphics), m_Surface, &supported);
 	return true;
 }
 
@@ -583,7 +587,7 @@ bool VulkanApp::CreateLogicalDevice()
 	{
 		VkDeviceQueueCreateInfo queueInfo{};
 		queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueInfo.queueFamilyIndex = m_QueueIndices.Graphics;
+		queueInfo.queueFamilyIndex = static_cast<uint32_t>(m_QueueIndices.Graphics);
 		queueInfo.queueCount = 1;
 		queueInfo.pQueuePriorities = &defaultQueuePriority;
 		deviceQueueCreateInfos.push_back(queueInfo);
@@ -597,7 +601,7 @@ bool VulkanApp::CreateLogicalDevice()
 			// If compute family index differs, we need an additional queue create info for the compute queue
 			VkDeviceQueueCreateInfo queueInfo{};
 			queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueInfo.queueFamilyIndex = m_QueueIndices.Compute;
+			queueInfo.queueFamilyIndex = static_cast<uint32_t>(m_QueueIndices.Compute);
 			queueInfo.queueCount = 1;
 			queueInfo.pQueuePriorities = &defaultQueuePriority;
 			deviceQueueCreateInfos.push_back(queueInfo);
@@ -607,19 +611,18 @@ bool VulkanApp::CreateLogicalDevice()
 	if (m_RenderMethod == ERenderMethod::Graphics)
 		m_PresentQueue = m_GraphicsQueue;
 
-	constexpr float defaultQueuePrority[1] = { 1.0f };
 	VkPhysicalDeviceFeatures enabledFeatures = {};
 	enabledFeatures.shaderFloat64 = m_PhysicalDeviceFeatures.shaderFloat64;
 	
 	VkDeviceCreateInfo deviceCreateInfo;
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.enabledExtensionCount = Utilities::RequiredDeviceExtensions.size();
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(Utilities::RequiredDeviceExtensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames = Utilities::RequiredDeviceExtensions.data();
-	deviceCreateInfo.enabledLayerCount = Utilities::RequestedDeviceLayers.size();
+	deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(Utilities::RequestedDeviceLayers.size());
 	deviceCreateInfo.ppEnabledLayerNames = Utilities::RequestedDeviceLayers.data();
 	deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
 	deviceCreateInfo.pQueueCreateInfos = deviceQueueCreateInfos.data();
-	deviceCreateInfo.queueCreateInfoCount = deviceQueueCreateInfos.size();
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueCreateInfos.size());
 	deviceCreateInfo.flags = 0;
 	deviceCreateInfo.pNext = nullptr;
 
@@ -635,19 +638,19 @@ bool VulkanApp::CreateLogicalDevice()
 
 	vkGetDeviceQueue(
 		m_LogicalDevice,
-		m_QueueIndices.Graphics,
+		static_cast<uint32_t>(m_QueueIndices.Graphics),
 		0,
 		&m_GraphicsQueue);
 
 	vkGetDeviceQueue(
 		m_LogicalDevice,
-		m_QueueIndices.Compute,
+		static_cast<uint32_t>(m_QueueIndices.Compute),
 		0,
 		&m_ComputeQueue);
 
 	VkCommandPoolCreateInfo graphicsCommandPoolCreateInfo;
 	graphicsCommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	graphicsCommandPoolCreateInfo.queueFamilyIndex = m_QueueIndices.Graphics;
+	graphicsCommandPoolCreateInfo.queueFamilyIndex = static_cast<uint32_t>(m_QueueIndices.Graphics);
 	graphicsCommandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	graphicsCommandPoolCreateInfo.pNext = nullptr;
 
@@ -659,7 +662,7 @@ bool VulkanApp::CreateLogicalDevice()
 
 	VkCommandPoolCreateInfo computeCommandPoolCreateInfo;
 	computeCommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	computeCommandPoolCreateInfo.queueFamilyIndex = m_QueueIndices.Compute;
+	computeCommandPoolCreateInfo.queueFamilyIndex = static_cast<uint32_t>(m_QueueIndices.Compute);
 	computeCommandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	computeCommandPoolCreateInfo.pNext = nullptr;
 
@@ -841,7 +844,7 @@ bool VulkanApp::CreateSwapchain()
 		nullptr,
 		&m_SwapchainRenderPass));
 
-	uint32_t i = 0;
+	uint32_t imageIndex = 0;
 	for (const VkImage image : m_SwapchainImages)
 	{
 		VkImageViewCreateInfo imageViewCreateInfo;
@@ -865,7 +868,7 @@ bool VulkanApp::CreateSwapchain()
 			m_LogicalDevice,
 			&imageViewCreateInfo,
 			nullptr,
-			&m_SwapchainImageViews[i]));
+			&m_SwapchainImageViews[imageIndex]));
 
 		VkFramebufferCreateInfo framebufferCreateInfo;
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -873,7 +876,7 @@ bool VulkanApp::CreateSwapchain()
 		framebufferCreateInfo.width = m_SwapchainExtent.width;
 		framebufferCreateInfo.height = m_SwapchainExtent.height;
 		framebufferCreateInfo.attachmentCount = 1;
-		framebufferCreateInfo.pAttachments = &m_SwapchainImageViews[i];
+		framebufferCreateInfo.pAttachments = &m_SwapchainImageViews[imageIndex];
 		framebufferCreateInfo.layers = 1;
 		framebufferCreateInfo.flags = 0;
 		framebufferCreateInfo.pNext = nullptr;
@@ -882,9 +885,9 @@ bool VulkanApp::CreateSwapchain()
 			m_LogicalDevice,
 			&framebufferCreateInfo,
 			nullptr,
-			&m_SwapchainFramebuffers[i]));
+			&m_SwapchainFramebuffers[imageIndex]));
 
-		++i;
+		++imageIndex;
 	}
 
 	VkSemaphoreCreateInfo semaphoreCreateInfo;
@@ -1023,7 +1026,6 @@ bool VulkanApp::CreateGraphicsBasedPipeline()
 			nullptr,
 			&m_VertexBuffer.Handle));
 
-		memoryRequirements;
 		vkGetBufferMemoryRequirements(
 			m_LogicalDevice,
 			m_VertexBuffer.Handle,
@@ -1556,8 +1558,6 @@ bool VulkanApp::CreateGraphicsBasedPipeline()
 
 bool VulkanApp::CreateComputeBasedPipeline()
 {
-	constexpr uint32_t WORKGROUP_SIZE = 32U;
-
 	VkBufferCreateInfo bufferCreateInfo;
 	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
@@ -1919,7 +1919,7 @@ bool VulkanApp::RecordComputeCommandBuffers()
 	return true;
 }
 
-void VulkanApp::UpdateFrameData(const double deltaTime)
+void VulkanApp::UpdateFrameData(const float deltaTime)
 {
 	INTERNALSCOPE float zoomScale = 1.0f; 
 	const auto [windowWidth, windowHeight] = m_Window->GetSize();
@@ -1933,7 +1933,8 @@ void VulkanApp::UpdateFrameData(const double deltaTime)
 		0.0f,
 		-0.5f,
 		zoomScale,
-		800
+		800,
+		{}
 	};
 	
 	constexpr float moveSpeedFactor = 0.25f;
@@ -1995,7 +1996,9 @@ void VulkanApp::UpdateFrameData(const double deltaTime)
 	uboBufferDescriptorSetWrite.pNext = nullptr;
 }
 
+#pragma warning(push, 0)
 #include <lodepng.h>
+#pragma warning(pop)
 #include <iostream>
 
 void VulkanApp::DrawFrame()
@@ -2430,7 +2433,7 @@ VulkanApp::QueueFamilyIndices VulkanApp::GetQueueFamilyIndices(int32_t flags)
 			auto& queueFamilyProperties = m_QueueFamilyProperties[i];
 			if ((queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT) && ((queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
 			{
-				indices.Compute = i;
+				indices.Compute = static_cast<int32_t>(i);
 				break;
 			}
 		}
@@ -2445,7 +2448,7 @@ VulkanApp::QueueFamilyIndices VulkanApp::GetQueueFamilyIndices(int32_t flags)
 			auto& queueFamilyProperties = m_QueueFamilyProperties[i];
 			if ((queueFamilyProperties.queueFlags & VK_QUEUE_TRANSFER_BIT) && ((queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) && ((queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT) == 0))
 			{
-				indices.Transfer = i;
+				indices.Transfer = static_cast<int32_t>(i);
 				break;
 			}
 		}
@@ -2457,19 +2460,19 @@ VulkanApp::QueueFamilyIndices VulkanApp::GetQueueFamilyIndices(int32_t flags)
 		if ((flags & VK_QUEUE_TRANSFER_BIT) && indices.Transfer == -1)
 		{
 			if (m_QueueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
-				indices.Transfer = i;
+				indices.Transfer = static_cast<int32_t>(i);
 		}
 
 		if ((flags & VK_QUEUE_COMPUTE_BIT) && indices.Compute == -1)
 		{
 			if (m_QueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
-				indices.Compute = i;
+				indices.Compute = static_cast<int32_t>(i);
 		}
 
 		if (flags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			if (m_QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-				indices.Graphics = i;
+				indices.Graphics = static_cast<int32_t>(i);
 		}
 	}
 
@@ -2486,10 +2489,10 @@ VkShaderModule VulkanApp::CreateShaderModule(const std::string_view filepath) co
 	}
 
 	std::vector<char> code;
-	const uint64_t fileSize = file.tellg();
-	code.resize(fileSize);
+	const std::streampos fileSize = file.tellg();
+	code.resize(static_cast<size_t>(fileSize));
 	file.seekg(std::ios::beg);
-	file.read(code.data(), fileSize);
+	file.read(code.data(), static_cast<std::streamsize>(fileSize));
 	file.close();
 
 	VkShaderModuleCreateInfo shaderModuleCreateInfo;
@@ -2537,29 +2540,16 @@ namespace Utilities {
 		const char* pMessage,
 		void* pUserData)
 	{
+		(void)object;
+		(void)location;
+		(void)messageCode;
+		(void)pLayerPrefix;
+		(void)pUserData;
+
 		if (flags)
 			printf("VulkanDebugCallback:\n  Object Type: %d\n  Message: %s", objectType, pMessage);
 
 		return VK_FALSE;
 	}
 #endif
-	const std::string_view RetrieveVendorFromID(const uint32_t vendorID)
-	{
-		switch (vendorID)
-		{
-			case 0x10DE: return "NVIDIA";
-			case 0x1002: return "AMD";
-			case 0x13B5: return "ARM";
-			case 0x8086: return "INTEL";
-
-			default:
-			{
-				printf("Failed to retrieve GPU vendor from ID\n");
-				return "Unknown vendor";
-			}
-		}
-
-		printf("Failed to retrieve GPU vendor from ID\n");
-		return "Unknown vendor";
-	}
 }

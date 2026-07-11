@@ -1,4 +1,19 @@
+#include <string_view>
+#pragma warning(push, 0)
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 #include <stb_image.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+#endif
+
+#pragma warning(pop)
+
 #include "include/Image2D.h"
 #include "include/Application.h"
 
@@ -6,10 +21,10 @@ Image2D::Image2D(const std::string_view assetPath)
 	:
 	m_AssetPath(assetPath),
 	m_Properties(),
+	m_CPUData(),
 	m_ImageHandle(VK_NULL_HANDLE),
 	m_ImageView(VK_NULL_HANDLE),
-	m_Sampler(VK_NULL_HANDLE),
-	m_CPUData()
+	m_Sampler(VK_NULL_HANDLE)
 {
 	assert(Load());
 
@@ -25,7 +40,7 @@ Image2D::Image2D(const std::string_view assetPath)
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.extent.width = m_Properties.Width;
 	imageCreateInfo.extent.height = m_Properties.Height;
-	imageCreateInfo.extent.depth = 1.0f;
+	imageCreateInfo.extent.depth = 1u;
 	imageCreateInfo.format = format;
 	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 	imageCreateInfo.usage = imageUsageFlags;
@@ -304,8 +319,14 @@ bool Image2D::Load()
 	stbi_uc* pixelData = stbi_load(m_AssetPath.string().c_str(), &width, &height, &channelCount, STBI_rgb_alpha);
 	assert(pixelData);
 
-	m_Properties = ImageProperties(width, height, channelCount);
-	m_ImageMemorySpace = width * height * sizeOfPixel;
+	m_Properties = ImageProperties(static_cast<uint32_t>(width), static_cast<uint32_t>(height), static_cast<uint32_t>(channelCount));
+	
+	m_ImageMemorySpace = static_cast<VkDeviceSize>(
+		static_cast<uint32_t>(width) *
+		static_cast<uint32_t>(height) *
+		sizeOfPixel
+	);
+
 	m_CPUData.Set(m_ImageMemorySpace, pixelData);
 	return true;
 }
