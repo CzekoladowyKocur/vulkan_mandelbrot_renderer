@@ -1,5 +1,5 @@
+#include <stb_image.h>
 #include "include/Image2D.h"
-#include "vendor/stb/stb_image.h"
 #include "include/Application.h"
 
 Image2D::Image2D(const std::string_view assetPath)

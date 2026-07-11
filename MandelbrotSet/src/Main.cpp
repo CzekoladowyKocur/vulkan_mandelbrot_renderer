@@ -2,10 +2,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <cstdio>
+#include <vulkan/vulkan.h>
+
 #include "include/Core.h"
 
 #include "include/Application.h"
-#include "vendor/vulkan/include/vulkan.h"
 
 #undef APIENTRY
 INT WINAPI wWinMain(

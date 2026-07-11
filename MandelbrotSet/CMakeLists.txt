@@ -1,0 +1,76 @@
+cmake_minimum_required(VERSION 3.30)
+
+project(vulkan_mandelbrot_renderer)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(VULKAN_SDK_REQUIRED_VERSION 1.3)
+
+find_package(Vulkan ${VULKAN_SDK_REQUIRED_VERSION} REQUIRED COMPONENTS glslc) 
+
+include(FetchContent)
+
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY https://github.com/g-truc/glm.git
+	GIT_TAG 8d1fd52e5ab5590e2c81768ace50c72bae28f2ed # v1.0.3
+)
+
+FetchContent_Declare(
+	stb
+	GIT_REPOSITORY https://github.com/nothings/stb.git
+	GIT_TAG 31c1ad37456438565541f4919958214b6e762fb4
+)
+
+FetchContent_Declare(
+	lodepng
+	GIT_REPOSITORY https://github.com/lvandeve/lodepng.git
+	GIT_TAG ed6fe5825c6a4fbb7f58ab35a4231c7543cd452a
+)
+
+FetchContent_MakeAvailable(
+	glm
+	stb
+	lodepng
+)
+
+add_executable(vulkan_mandelbrot_renderer
+	src/Application.cpp
+	src/Image2D.cpp
+	src/Input.cpp
+	src/LibraryBuild.cpp
+	src/Main.cpp
+	src/Platform.cpp
+	src/Window.cpp
+)
+
+target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+
+add_library(lodepng INTERFACE)
+target_include_directories(lodepng INTERFACE ${lodepng_SOURCE_DIR})
+
+target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
+	Vulkan::Vulkan
+	glm::glm
+	lodepng
+	stb
+)
+
+target_compile_definitions(vulkan_mandelbrot_renderer PRIVATE
+	$<$<CONFIG:Debug>:APP_DEBUG>
+)
+
+if(MSVC)
+	target_link_options(vulkan_mandelbrot_renderer PRIVATE 
+		"/ENTRY:wWinMainCRTStartup"
+	)
+
+	set_target_properties(vulkan_mandelbrot_renderer PROPERTIES
+		VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+	)
+endif()
+
