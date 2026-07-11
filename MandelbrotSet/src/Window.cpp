@@ -7,11 +7,9 @@
 namespace Utilities {
 	constexpr const char* g_WindowClassName = "Vulkan Mandelbrot Renderer";
 	constexpr uint32_t EventHandled = 0;
-	constexpr uint32_t MaxBufferLength = 128;
 }
 
-INTERNALSCOPE LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-INTERNALSCOPE LRESULT PASCAL Win32ProcedureErrorFunctionCallback(HWND hwnd, INT errorID);
+LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 Window::Window(const HINSTANCE hInstance, WindowProperties&& windowProperties) noexcept
 	:
@@ -47,8 +45,8 @@ Window::Window(const HINSTANCE hInstance, WindowProperties&& windowProperties) n
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		m_WindowProperties.Width,
-		m_WindowProperties.Height,
+		static_cast<int>(m_WindowProperties.Width),
+		static_cast<int>(m_WindowProperties.Height),
 		NULL,
 		NULL,
 		m_HInstance,
@@ -60,7 +58,7 @@ Window::Window(const HINSTANCE hInstance, WindowProperties&& windowProperties) n
 		assert(false);
 	}
 
-	const uint32_t consoleFlags = m_WindowProperties.ShowCMD ? SW_SHOW : SW_HIDE;
+	const int consoleFlags = m_WindowProperties.ShowCMD ? SW_SHOW : SW_HIDE;
 	ShowWindow(GetConsoleWindow(), consoleFlags);
 
 	constexpr uint32_t windowFlags = SW_SHOWMAXIMIZED;
@@ -100,7 +98,6 @@ const std::pair<HWND, HINSTANCE> Window::GetInternalState() const
 	return { m_Handle, m_HInstance };
 }
 
-/* Callbacks */
 LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	Window* window = reinterpret_cast<Window*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
@@ -121,7 +118,7 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WP
 
 		case WM_DESTROY:
 		{
-			PostQuitMessage(wParam);
+			PostQuitMessage(static_cast<int>(wParam));
 
 			WindowCloseEvent event;
 			window->m_WindowProperties.CallbackFunction(event);
@@ -132,7 +129,7 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WP
 		case WM_CLOSE:
 		{
 			/* Fire close event */
-			PostQuitMessage(wParam);
+			PostQuitMessage(static_cast<int>(wParam));
 			WindowCloseEvent event;
 			window->m_WindowProperties.CallbackFunction(event);
 
@@ -141,13 +138,16 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WP
 
 		case WM_SIZE:
 		{
-			DWORD width = LOWORD(lParam);
-			DWORD height = HIWORD(wParam);
+			const DWORD width = LOWORD(lParam);
+			const DWORD height = HIWORD(wParam);
+
+			(void)width;
+			(void)height;
 
 			RECT rectangle;
 			GetClientRect(hwnd, &rectangle);
-			const uint32_t actualWidth = rectangle.right - rectangle.left;
-			const uint32_t actualHeight = rectangle.bottom - rectangle.top;
+			const uint32_t actualWidth = static_cast<uint32_t>(rectangle.right - rectangle.left);
+			const uint32_t actualHeight = static_cast<uint32_t>(rectangle.bottom - rectangle.top);
 
 			window->m_WindowProperties.Width = actualWidth;
 			window->m_WindowProperties.Height = actualHeight;
@@ -176,12 +176,7 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WP
 
 			return Utilities::EventHandled;
 		}
-
-		default:
-		{
-			return DefWindowProcA(hwnd, message, wParam, lParam);
-		}
-
+		
 		case WM_KEYDOWN:
 		{
 			window->m_KeyStates[static_cast<std::size_t>(wParam)] = static_cast<uint8_t>(true);
@@ -204,46 +199,20 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message, WP
 			return Utilities::EventHandled;
 		}
 
-
 		case WM_MOUSEMOVE:
 		{
-			const DWORD xPosition = GET_X_LPARAM(lParam);
-			const DWORD yPosition = GET_Y_LPARAM(lParam);
+			const int xPosition = GET_X_LPARAM(lParam);
+			const int yPosition = GET_Y_LPARAM(lParam);
+
+			(void)xPosition;
+			(void)yPosition;
 
 			return Utilities::EventHandled;
 		}
+
+		default:
+		{
+			return DefWindowProcA(hwnd, message, wParam, lParam);
+		}
 	}
-
-	return DefWindowProcA(hwnd, message, wParam, lParam);
-}
-
-LRESULT PASCAL Win32ProcedureErrorFunctionCallback(HWND hwnd, INT errorID)
-{
-	INTERNALSCOPE TCHAR s_ErrorBuffer[Utilities::MaxBufferLength]{ 0 };
-
-	if (!hwnd)
-	{
-		MessageBoxExA(
-			NULL,
-			"An Win32 API error occured, but the window is null!",
-			NULL,
-			MB_ICONERROR,
-			LANG_SYSTEM_DEFAULT);
-
-		return static_cast<LRESULT>(false);
-	}
-
-	if (errorID == 0)
-		return static_cast<LRESULT>(true);
-
-	//sprintf_s(s_ErrorBuffer, MaxBufferLength, "Error# %d", errorID);
-
-	MessageBoxExA(
-		hwnd,
-		reinterpret_cast<LPCSTR>(s_ErrorBuffer),
-		NULL,
-		MB_ICONERROR,
-		LANG_SYSTEM_DEFAULT);
-
-	return static_cast<LRESULT>(true);
 }

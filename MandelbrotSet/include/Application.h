@@ -1,4 +1,5 @@
 #pragma once
+#include <string_view>
 #include "include/Core.h"
 #include "include/Window.h"
 #include "include/VulkanTypes.h"
@@ -40,7 +41,7 @@ private:
 	bool RecordGraphicsCommandBuffers();
 	bool RecordComputeCommandBuffers();
 
-	void UpdateFrameData(const double deltaTime);
+	void UpdateFrameData(const float deltaTime);
 	void DrawFrame();
 	/* Swapchain */
 	void RecreateSwapchain(const uint32_t width, const uint32_t height);
@@ -86,7 +87,7 @@ private:
 		int32_t Graphics = -1;
 		int32_t Compute = -1;
 		int32_t Transfer = -1;
-	} m_QueueIndices;
+	};
 
 	QueueFamilyIndices GetQueueFamilyIndices(int32_t flags);
 private:
@@ -105,6 +106,9 @@ private:
 	VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures;
 	mutable VkPhysicalDeviceMemoryProperties m_PhysicalDeviceMemoryProperties;
 	VkPhysicalDevice m_PhysicalDevice;
+
+	QueueFamilyIndices m_QueueIndices;
+
 	
 	/* Logical Device */
 	VkDevice m_LogicalDevice;
@@ -174,7 +178,7 @@ private:
 	uint32_t m_ImageIndex;
 	uint32_t m_FrameIndex;
 
-	std::vector<VkFence> m_InFlightFences;;
+	std::vector<VkFence> m_InFlightFences;
 	std::vector<VkFence> m_ImagesInFlight;
 
 	/* Assets */

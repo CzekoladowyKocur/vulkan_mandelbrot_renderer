@@ -18,5 +18,5 @@ double Platform::GetAbsoluteTime()
 {
 	LARGE_INTEGER currentTime;
 	QueryPerformanceCounter(&currentTime);
-	return currentTime.QuadPart * s_SystemClockFrequency;
+	return static_cast<double>(currentTime.QuadPart) * s_SystemClockFrequency;
 }

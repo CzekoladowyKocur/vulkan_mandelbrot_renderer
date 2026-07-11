@@ -9,13 +9,18 @@
 #include "include/Application.h"
 
 #undef APIENTRY
-INT WINAPI wWinMain(
-	HINSTANCE hInstance,
-	HINSTANCE hPreviousInstance,
-	PWSTR pCmdLine,
-	INT cmdShow)
+int __stdcall WINAPI
+wWinMain(
+	_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR lpCmdLine,
+	_In_ int nShowCmd
+)
 {
-	VulkanApp* application = new VulkanApp(VulkanApp::ERenderMethod::Graphics, hInstance, cmdShow);
+	(void)hPrevInstance;
+	(void)lpCmdLine;
+
+	VulkanApp* application = new VulkanApp(VulkanApp::ERenderMethod::Graphics, hInstance, nShowCmd);
 	if (application->Initialize())
 	{
 		if (application->Run())

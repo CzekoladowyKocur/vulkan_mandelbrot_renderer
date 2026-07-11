@@ -20,7 +20,7 @@ public:
 
 	~Event() = default;
 
-	virtual const EEventType GetEventType() const final { return m_Flags; }
+	virtual EEventType GetEventType() const { return m_Flags; }
 protected:
 	EEventType m_Flags;
 };
