@@ -1995,7 +1995,7 @@ void VulkanApp::UpdateFrameData(const double deltaTime)
 	uboBufferDescriptorSetWrite.pNext = nullptr;
 }
 
-#include "vendor/lodepng/lodepng.h"
+#include <lodepng.h>
 #include <iostream>
 
 void VulkanApp::DrawFrame()
