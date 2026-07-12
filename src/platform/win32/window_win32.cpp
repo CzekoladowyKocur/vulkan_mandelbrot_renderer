@@ -28,7 +28,13 @@ struct win32_window_state {
   }
 };
 
-struct window::detail final : win32_window_state {};
+struct window::detail final : win32_window_state {
+  explicit detail(window_props &&props)
+      : win32_window_state{.width{props.width},
+                           .height{props.height},
+                           .name{std::move(props.name)},
+                           .maximized{props.maximized}} {}
+};
 
 std::expected<window, std::error_code>
 window::create(window_props &&props) noexcept {
@@ -45,11 +51,8 @@ window::create(window_props &&props) noexcept {
   }
 }
 
-window::window(window_props &&props) : m_detail{std::make_unique<detail>()} {
-  m_detail->width = props.width;
-  m_detail->height = props.height;
-  m_detail->name = std::move(props.name);
-}
+window::window(window_props &&props)
+    : m_detail{std::make_unique<detail>(std::move(props))} {}
 
 window::window(window &&) noexcept = default;
 
