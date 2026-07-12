@@ -23,6 +23,16 @@
       "displayName": "Clang-cl (Visual Studio 2026 x64)",
       "inherits": "msvc",
       "toolset": "ClangCL"
+    },
+    {
+      "name": "ninja",
+      "displayName": "Ninja Generator",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_GENERATOR_PLATFORM": ""
+      }
     }
   ],
   "buildPresets": [
@@ -45,6 +55,11 @@
       "name": "clang-release",
       "configurePreset": "clang",
       "configuration": "Release"
+    },
+    {
+      "name": "ninja-debug",
+      "configurePreset": "ninja",
+      "configuration": "Debug"
     }
   ]
 }
