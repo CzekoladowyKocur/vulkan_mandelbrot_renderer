@@ -1,5 +1,7 @@
 #include "include/window.hpp"
 
+#include <Windows.h>
+
 #include "include/VulkanTypes.hpp"
 
 constexpr int g_callback_slot{0};
@@ -209,13 +211,13 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
 
   case WM_KEYDOWN:
   case WM_SYSKEYDOWN: {
-    dispatch(key_pressed_event{.key_code{static_cast<KeyCode>(wParam)}});
+    dispatch(key_pressed_event{.code{static_cast<key_code>(wParam)}});
     return event_handled;
   }
 
   case WM_KEYUP:
   case WM_SYSKEYUP: {
-    dispatch(key_released_event{.key_code{static_cast<KeyCode>(wParam)}});
+    dispatch(key_released_event{.code{static_cast<key_code>(wParam)}});
     return event_handled;
   }
 

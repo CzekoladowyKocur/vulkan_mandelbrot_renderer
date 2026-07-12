@@ -34,7 +34,7 @@ FetchContent_MakeAvailable(
 add_executable(vulkan_mandelbrot_renderer
 	src/Application.cpp
 	src/Image2D.cpp
-	src/Input.cpp
+	src/input.cpp
 	src/LibraryBuild.cpp
 	src/Main.cpp
 	src/Platform.cpp

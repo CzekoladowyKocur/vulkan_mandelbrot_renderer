@@ -1,5 +1,5 @@
 #pragma once
-#include "include/Input.hpp"
+#include "include/input.hpp"
 #include <cstdint>
 #include <variant>
 
@@ -13,11 +13,11 @@ struct window_resize_event final {
 struct window_minimize_event final {};
 
 struct key_pressed_event final {
-  KeyCode key_code{};
+  key_code code{};
 };
 
 struct key_released_event final {
-  KeyCode key_code{};
+  key_code code{};
 };
 
 using event =

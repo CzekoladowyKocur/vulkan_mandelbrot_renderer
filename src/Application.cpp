@@ -1,6 +1,6 @@
 #include "include\Application.hpp"
-#include "include\Input.hpp"
 #include "include\Platform.hpp"
+#include "include\input.hpp"
 #include <glm/glm.hpp>
 #include <print>
 #include <stb_image_write.h>
@@ -282,11 +282,11 @@ void VulkanApp::OnEvent(const event &polled_event) {
                  [](const window_minimize_event &) {},
 
                  [this](const key_pressed_event &key) {
-                   m_Input.SetKeyState(key.key_code, true);
+                   m_input.set_key_state(key.code, true);
                  },
 
                  [this](const key_released_event &key) {
-                   m_Input.SetKeyState(key.key_code, false);
+                   m_input.set_key_state(key.code, false);
                  },
              },
              polled_event);
@@ -1720,32 +1720,32 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
   constexpr float zoomSpeedFactor = 1.0f;
 
   const float zoomSpeed = zoomSpeedFactor;
-  const float moveSpeed = m_Input.IsKeyPressed(Key::KEY_SHIFT)
+  const float moveSpeed = m_input.is_key_pressed(key_code::shift)
                               ? moveSpeedFactor * 2.0f
                               : moveSpeedFactor;
   /* Move */
-  if (m_Input.IsKeyPressed(Key::KEY_Z))
+  if (m_input.is_key_pressed(key_code::z))
     zoomScale += zoomScale * zoomSpeed * deltaTime;
 
-  if (m_Input.IsKeyPressed(Key::KEY_X))
+  if (m_input.is_key_pressed(key_code::x))
     zoomScale -= zoomScale * zoomSpeed * deltaTime;
 
-  if (m_Input.IsKeyPressed(Key::KEY_W))
+  if (m_input.is_key_pressed(key_code::w))
     ubo.CenterX -= moveSpeed * deltaTime * zoomScale;
 
-  if (m_Input.IsKeyPressed(Key::KEY_S))
+  if (m_input.is_key_pressed(key_code::s))
     ubo.CenterX += moveSpeed * deltaTime * zoomScale;
 
-  if (m_Input.IsKeyPressed(Key::KEY_A))
+  if (m_input.is_key_pressed(key_code::a))
     ubo.CenterY -= moveSpeed * deltaTime * zoomScale;
 
-  if (m_Input.IsKeyPressed(Key::KEY_D))
+  if (m_input.is_key_pressed(key_code::d))
     ubo.CenterY += moveSpeed * deltaTime * zoomScale;
 
-  if (m_Input.IsKeyPressed(Key::KEY_UP))
+  if (m_input.is_key_pressed(key_code::up))
     ubo.IterationCount += 1;
 
-  if (m_Input.IsKeyPressed(Key::KEY_DOWN))
+  if (m_input.is_key_pressed(key_code::down))
     ubo.IterationCount -= 1;
 
   /* Cap the zoom scale to avoid black border as we are rendering a quad */
