@@ -19,6 +19,7 @@ struct win32_window_state {
 
   HWND hwnd{};
   HINSTANCE hinstance{};
+  bool maximized{};
 
   ~win32_window_state() {
     if (hwnd != nullptr) {
@@ -88,7 +89,7 @@ std::expected<void, std::error_code> window::initialize() noexcept {
   const LONG_PTR dwNewWndProc{reinterpret_cast<LONG_PTR>(&win32_wndproc)};
   ::SetWindowLongPtrA(m_detail->hwnd, GWLP_WNDPROC, dwNewWndProc);
 
-  const int nCmdShow{SW_SHOWMAXIMIZED};
+  const int nCmdShow{m_detail->maximized ? SW_SHOWMAXIMIZED : SW_SHOW};
   ::ShowWindow(m_detail->hwnd, nCmdShow);
   ::UpdateWindow(m_detail->hwnd);
   ::SetFocus(m_detail->hwnd);

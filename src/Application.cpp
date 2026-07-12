@@ -95,7 +95,8 @@ bool VulkanApp::Initialize() {
     auto created{
         window::create(window_props{.width{1280u},
                                     .height{720u},
-                                    .name{"Vulkan Mandelbrot Set Renderer"}})};
+                                    .name{"Vulkan Mandelbrot Set Renderer"},
+                                    .maximized{true}})};
 
     if (!created) {
       std::println("Failed to initialize window: {}",
