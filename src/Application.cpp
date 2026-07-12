@@ -1,10 +1,10 @@
-#include <glm/glm.hpp>
-#include <print>
-#include <string_view>
-#include <stb_image_write.h>
 #include "include\Application.h"
 #include "include\Input.h"
 #include "include\Platform.h"
+#include <glm/glm.hpp>
+#include <print>
+#include <stb_image_write.h>
+#include <string_view>
 
 namespace Utilities {
 #if APP_DEBUG
