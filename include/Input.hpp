@@ -1,5 +1,5 @@
 #pragma once
-#include "include/Core.h"
+#include "include/Core.hpp"
 
 using KeyCode = uint16_t;
 using MouseCode = uint16_t;

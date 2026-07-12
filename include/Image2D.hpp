@@ -1,6 +1,6 @@
 #pragma once
-#include "include/Core.h"
-#include "include/VulkanTypes.h"
+#include "include/Core.hpp"
+#include "include/VulkanTypes.hpp"
 #include <filesystem>
 #include <string_view>
 

@@ -1,6 +1,6 @@
 #pragma once
-#include "include/Core.h"
-#include "include/Input.h"
+#include "include/Core.hpp"
+#include "include/Input.hpp"
 
 enum class EEventType : std::uint8_t {
   None = 0,

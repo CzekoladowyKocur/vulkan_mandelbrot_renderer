@@ -1,6 +1,6 @@
-#include "include\Application.h"
-#include "include\Input.h"
-#include "include\Platform.h"
+#include "include\Application.hpp"
+#include "include\Input.hpp"
+#include "include\Platform.hpp"
 #include <glm/glm.hpp>
 #include <print>
 #include <stb_image_write.h>

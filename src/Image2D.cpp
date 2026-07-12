@@ -14,8 +14,8 @@
 
 #pragma warning(pop)
 
-#include "include/Application.h"
-#include "include/Image2D.h"
+#include "include/Application.hpp"
+#include "include/Image2D.hpp"
 
 Image2D::Image2D(const std::string_view assetPath)
     : m_AssetPath(assetPath), m_Properties(), m_CPUData() {
