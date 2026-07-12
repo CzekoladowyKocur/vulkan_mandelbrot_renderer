@@ -26,17 +26,9 @@ FetchContent_Declare(
 	SYSTEM
 )
 
-FetchContent_Declare(
-	lodepng
-	GIT_REPOSITORY https://github.com/lvandeve/lodepng.git
-	GIT_TAG ed6fe5825c6a4fbb7f58ab35a4231c7543cd452a
-	SYSTEM
-)
-
 FetchContent_MakeAvailable(
 	glm
 	stb
-	lodepng
 )
 
 add_executable(vulkan_mandelbrot_renderer
@@ -54,13 +46,10 @@ target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SO
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
-add_library(lodepng STATIC ${lodepng_SOURCE_DIR}/lodepng.cpp)
-target_include_directories(lodepng SYSTEM PUBLIC ${lodepng_SOURCE_DIR})
 
 target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
 	Vulkan::Vulkan
 	glm::glm
-	lodepng
 	stb
 )
 

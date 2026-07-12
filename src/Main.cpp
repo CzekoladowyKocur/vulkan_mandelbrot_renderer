@@ -16,7 +16,7 @@ int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,
   (void)lpCmdLine;
 
   auto application =
-      new VulkanApp(VulkanApp::ERenderMethod::Graphics, hInstance, nShowCmd);
+      new VulkanApp(VulkanApp::ERenderMethod::Compute, hInstance, nShowCmd);
   if (application->Initialize()) {
     if (application->Run()) {
 
