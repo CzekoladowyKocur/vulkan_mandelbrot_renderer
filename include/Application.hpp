@@ -1,10 +1,11 @@
 #pragma once
-#include "include/Core.hpp"
 #include "include/Image2D.hpp"
 #include "include/VulkanTypes.hpp"
 #include "include/window.hpp"
+#include <cstdint>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 class VulkanApp {
 public:

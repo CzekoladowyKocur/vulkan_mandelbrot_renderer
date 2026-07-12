@@ -1,13 +1,13 @@
 #pragma once
-#include "include/Core.hpp"
 #include <cassert>
+#include <cstddef>
 #include <cstdio>
 #include <expected>
 #include <print>
 #include <string>
 #include <system_error>
+#include <vector>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_win32.h>
 
 class vulkan_error_category final : public std::error_category {
 public:
@@ -160,5 +160,5 @@ make_vulkan_error(const VkResult result) noexcept {
 struct VulkanBuffer {
   VkBuffer Handle = VK_NULL_HANDLE;
   VkDeviceMemory DeviceMemory = VK_NULL_HANDLE;
-  Buffer CPUData;
+  std::vector<std::byte> CPUData;
 };

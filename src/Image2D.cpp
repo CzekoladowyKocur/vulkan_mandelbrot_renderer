@@ -16,6 +16,8 @@
 
 #include "include/Application.hpp"
 #include "include/Image2D.hpp"
+#include <cassert>
+#include <cstring>
 
 Image2D::Image2D(const std::string_view assetPath)
     : m_AssetPath(assetPath), m_Properties(), m_CPUData() {
@@ -89,7 +91,7 @@ Image2D::Image2D(const std::string_view assetPath)
 
     void *data;
     vkMapMemory(device, stagingBufferMemory, 0, m_ImageMemorySpace, 0, &data);
-    memcpy(data, m_CPUData.Data(), m_CPUData.Size());
+    memcpy(data, m_CPUData.data(), m_CPUData.size());
     vkUnmapMemory(device, stagingBufferMemory);
   } /* Staging buffer */
 
@@ -253,6 +255,9 @@ bool Image2D::Load() {
       static_cast<VkDeviceSize>(static_cast<uint64_t>(width) *
                                 static_cast<uint64_t>(height) * sizeOfPixel);
 
-  m_CPUData.Set(static_cast<size_t>(m_ImageMemorySpace), pixelData);
+  const auto *const pixelBytes{reinterpret_cast<const std::byte *>(pixelData)};
+  m_CPUData.assign(pixelBytes,
+                   pixelBytes + static_cast<size_t>(m_ImageMemorySpace));
+  stbi_image_free(pixelData);
   return true;
 }
