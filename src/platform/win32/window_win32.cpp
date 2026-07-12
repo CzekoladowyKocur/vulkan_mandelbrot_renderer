@@ -201,8 +201,10 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
       return event_handled;
     }
 
-    RECT rectangle;
-    ::GetClientRect(hwnd, &rectangle);
+    RECT rectangle{};
+    if (::GetClientRect(hwnd, &rectangle) == FALSE) {
+      return event_handled;
+    }
 
     const auto width{
         static_cast<std::uint32_t>(rectangle.right - rectangle.left)};
