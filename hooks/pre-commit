@@ -16,8 +16,12 @@ fi
 
 TIDY_FILES=$(echo "$FILES" | grep '\.cpp$')
 
-clang-tidy --quiet -p=build/ninja $TIDY_FILES
-TIDY_STATUS=$?
+if [ -n "$TIDY_FILES" ]; then
+	clang-tidy --quiet -p=build/ninja $TIDY_FILES
+	TIDY_STATUS=$?
+else
+	TIDY_STATUS=0
+fi
 
 if [ $TIDY_STATUS -ne 0 ]; then
 	echo "" >&2
