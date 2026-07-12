@@ -1,7 +1,7 @@
 #pragma once
-#include "include/Core.hpp"
 #include "include/VulkanTypes.hpp"
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <string_view>
 #include <vector>

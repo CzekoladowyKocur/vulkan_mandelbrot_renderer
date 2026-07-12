@@ -1,10 +1,16 @@
 #include "include\Application.hpp"
 #include "include\input.hpp"
 #include <algorithm>
+#include <array>
+#include <cassert>
 #include <chrono>
+#include <cmath>
+#include <cstring>
+#include <fstream>
 #include <glm/glm.hpp>
 #include <print>
 #include <stb_image_write.h>
+#include <string>
 #include <string_view>
 
 namespace Utilities {
