@@ -27,16 +27,8 @@ constexpr std::size_t RenderedImageSize =
 } // namespace Utilities
 
 VulkanApp *VulkanApp::s_ApplicationInstance = nullptr;
-VulkanApp::VulkanApp(const ERenderMethod renderMethod, HINSTANCE hInstance,
-                     const bool showConsole)
-    : m_RenderMethod(renderMethod), m_Running(true),
-      m_Window(renderMethod == ERenderMethod::Graphics
-                   ? new Window(hInstance,
-                                {1280, 720, showConsole,
-                                 [this](auto &&ph1) {
-                                   OnEvent(std::forward<decltype(ph1)>(ph1));
-                                 }})
-                   : nullptr),
+VulkanApp::VulkanApp(const ERenderMethod renderMethod)
+    : m_RenderMethod(renderMethod), m_Running(true), m_window(nullptr),
       /* Vulkan API */
       m_Instance(VK_NULL_HANDLE), m_Surface(VK_NULL_HANDLE),
       m_PhysicalDeviceProperties(), m_PhysicalDeviceFeatures(),
@@ -80,9 +72,6 @@ VulkanApp::VulkanApp(const ERenderMethod renderMethod, HINSTANCE hInstance,
 
 VulkanApp::~VulkanApp() {
   m_Running = false;
-  if (m_Window)
-    delete m_Window;
-
   /* Vulkan API */
 }
 
@@ -102,6 +91,19 @@ bool VulkanApp::Initialize() {
       std::println("Failed to load assets");
       return false;
     }
+
+    auto created{
+        window::create(window_props{.width{1280u},
+                                    .height{720u},
+                                    .name{"Vulkan Mandelbrot Set Renderer"}})};
+
+    if (!created) {
+      std::println("Failed to initialize window: {}",
+                   created.error().message());
+      return false;
+    }
+
+    m_window = std::make_unique<window>(std::move(*created));
 
     if (!CreateSurface()) {
       std::println("Failed to create vulkan surface");
@@ -157,7 +159,7 @@ bool VulkanApp::Run() {
   while (m_Running) {
     /* Poll events */
 
-    m_Window->PollEvents();
+    m_window->poll([this](Event &event) { OnEvent(event); });
     const double deltaTime = Platform::GetAbsoluteTime() - timer;
     timer = Platform::GetAbsoluteTime();
 
@@ -274,13 +276,21 @@ void VulkanApp::OnEvent(Event &event) {
   }
 
   case EEventType::WindowResize: {
-    auto e = reinterpret_cast<WindowResizeEvent *>(&event);
+    auto *e{static_cast<WindowResizeEvent *>(&event)};
     const auto [windowWidth, windowHeight] = e->GetSize();
     m_SwapchainExtent.width = windowWidth;
     m_SwapchainExtent.height = windowHeight;
 
     std::println("Window resized: [width, height]: {}, {}", windowWidth,
                  windowHeight);
+    break;
+  }
+
+  case EEventType::KeyPressed:
+  case EEventType::KeyReleased: {
+    auto *e{static_cast<KeyEvent *>(&event)};
+    m_Input.SetKeyState(e->GetKeyCode(),
+                        event.GetEventType() == EEventType::KeyPressed);
     break;
   }
 
@@ -434,16 +444,15 @@ bool VulkanApp::CreateInstance() {
 }
 
 bool VulkanApp::CreateSurface() {
-  const auto [windowHandle, hInstance] = m_Window->GetInternalState();
-  VkWin32SurfaceCreateInfoKHR surfaceCreateInfo;
-  surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-  surfaceCreateInfo.hwnd = windowHandle;
-  surfaceCreateInfo.hinstance = hInstance;
-  surfaceCreateInfo.flags = 0;
-  surfaceCreateInfo.pNext = nullptr;
+  const auto surface{m_window->get_surface(m_Instance)};
 
-  VK_CHECK(vkCreateWin32SurfaceKHR(m_Instance, &surfaceCreateInfo, nullptr,
-                                   &m_Surface));
+  if (!surface) {
+    std::println("Failed to create vulkan surface: {}",
+                 surface.error().message());
+    return false;
+  }
+
+  m_Surface = *surface;
 
   VkBool32 supported;
   vkGetPhysicalDeviceSurfaceSupportKHR(
@@ -1697,7 +1706,7 @@ bool VulkanApp::RecordComputeCommandBuffers() {
 
 void VulkanApp::UpdateFrameData(const float deltaTime) {
   INTERNALSCOPE float zoomScale = 1.0f;
-  const auto [windowWidth, windowHeight] = m_Window->GetSize();
+  const auto [windowWidth, windowHeight] = m_window->get_size();
 
   if (windowWidth <= 0 || windowHeight <= 0)
     return;
@@ -1719,32 +1728,32 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
   constexpr float zoomSpeedFactor = 1.0f;
 
   const float zoomSpeed = zoomSpeedFactor;
-  const float moveSpeed = Input::IsKeyPressed(Key::KEY_SHIFT)
+  const float moveSpeed = m_Input.IsKeyPressed(Key::KEY_SHIFT)
                               ? moveSpeedFactor * 2.0f
                               : moveSpeedFactor;
   /* Move */
-  if (Input::IsKeyPressed(Key::KEY_Z))
+  if (m_Input.IsKeyPressed(Key::KEY_Z))
     zoomScale += zoomScale * zoomSpeed * deltaTime;
 
-  if (Input::IsKeyPressed(Key::KEY_X))
+  if (m_Input.IsKeyPressed(Key::KEY_X))
     zoomScale -= zoomScale * zoomSpeed * deltaTime;
 
-  if (Input::IsKeyPressed(Key::KEY_W))
+  if (m_Input.IsKeyPressed(Key::KEY_W))
     ubo.CenterX -= moveSpeed * deltaTime * zoomScale;
 
-  if (Input::IsKeyPressed(Key::KEY_S))
+  if (m_Input.IsKeyPressed(Key::KEY_S))
     ubo.CenterX += moveSpeed * deltaTime * zoomScale;
 
-  if (Input::IsKeyPressed(Key::KEY_A))
+  if (m_Input.IsKeyPressed(Key::KEY_A))
     ubo.CenterY -= moveSpeed * deltaTime * zoomScale;
 
-  if (Input::IsKeyPressed(Key::KEY_D))
+  if (m_Input.IsKeyPressed(Key::KEY_D))
     ubo.CenterY += moveSpeed * deltaTime * zoomScale;
 
-  if (Input::IsKeyPressed(Key::KEY_UP))
+  if (m_Input.IsKeyPressed(Key::KEY_UP))
     ubo.IterationCount += 1;
 
-  if (Input::IsKeyPressed(Key::KEY_DOWN))
+  if (m_Input.IsKeyPressed(Key::KEY_DOWN))
     ubo.IterationCount -= 1;
 
   /* Cap the zoom scale to avoid black border as we are rendering a quad */
@@ -1837,7 +1846,7 @@ void VulkanApp::DrawFrame() {
 
   if (result != VK_SUCCESS) {
 
-    const auto [windowWidth, windowHeight] = m_Window->GetSize();
+    const auto [windowWidth, windowHeight] = m_window->get_size();
     RecreateSwapchain(windowWidth, windowHeight);
     return;
   }
@@ -1879,7 +1888,7 @@ void VulkanApp::DrawFrame() {
   result = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    const auto [windowWidth, windowHeight] = m_Window->GetSize();
+    const auto [windowWidth, windowHeight] = m_window->get_size();
     RecreateSwapchain(windowWidth, windowHeight);
   }
 
@@ -1891,8 +1900,8 @@ void VulkanApp::RecreateSwapchain(const uint32_t width, const uint32_t height) {
   m_SwapchainExtent.height = height;
 
   while (m_SwapchainExtent.width == 0 || m_SwapchainExtent.height == 0) {
-    m_Window->PollEvents();
-    const auto [windowWidth, windowHeight] = m_Window->GetSize();
+    m_window->poll([this](Event &event) { OnEvent(event); });
+    const auto [windowWidth, windowHeight] = m_window->get_size();
 
     m_SwapchainExtent.width = windowWidth;
     m_SwapchainExtent.height = windowHeight;
