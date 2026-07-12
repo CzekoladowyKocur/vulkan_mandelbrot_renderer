@@ -6,7 +6,9 @@
 #include <string>
 #include <system_error>
 #include <utility>
-#include <vulkan/vulkan.h>
+
+using VkInstance = struct VkInstance_T *;
+using VkSurfaceKHR = struct VkSurfaceKHR_T *;
 
 inline constexpr const char *g_window_class_name{"VulkanMandelbrotRenderer"};
 
