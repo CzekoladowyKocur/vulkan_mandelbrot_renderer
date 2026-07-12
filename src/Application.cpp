@@ -1,6 +1,6 @@
 #include "include\Application.hpp"
-#include "include\Platform.hpp"
 #include "include\input.hpp"
+#include <chrono>
 #include <glm/glm.hpp>
 #include <print>
 #include <stb_image_write.h>
@@ -151,7 +151,6 @@ bool VulkanApp::Initialize() {
 }
 
 bool VulkanApp::Run() {
-  double timer = 0.0;
   if (m_RenderMethod == ERenderMethod::Compute) {
     DrawFrame();
     return true;
@@ -163,14 +162,17 @@ bool VulkanApp::Run() {
 
   window &active_window{*m_window};
 
+  auto previous_time{std::chrono::steady_clock::now()};
+
   while (m_Running) {
     /* Poll events */
 
     active_window.poll([this](const event &polled) { OnEvent(polled); });
-    const double deltaTime = Platform::GetAbsoluteTime() - timer;
-    timer = Platform::GetAbsoluteTime();
+    const auto current_time{std::chrono::steady_clock::now()};
+    const std::chrono::duration<float> delta_time{current_time - previous_time};
+    previous_time = current_time;
 
-    UpdateFrameData(static_cast<float>(deltaTime));
+    UpdateFrameData(delta_time.count());
     DrawFrame();
   }
 
