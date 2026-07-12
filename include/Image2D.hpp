@@ -1,8 +1,10 @@
 #pragma once
 #include "include/Core.hpp"
 #include "include/VulkanTypes.hpp"
+#include <cstddef>
 #include <filesystem>
 #include <string_view>
+#include <vector>
 
 struct ImageProperties {
   uint32_t Width, Height;
@@ -29,7 +31,7 @@ private:
 private:
   std::filesystem::path m_AssetPath;
   ImageProperties m_Properties;
-  Buffer m_CPUData;
+  std::vector<std::byte> m_CPUData;
 
   VkImage m_ImageHandle{VK_NULL_HANDLE};
   VkDeviceMemory m_ImageMemory{VK_NULL_HANDLE};

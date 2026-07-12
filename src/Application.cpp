@@ -851,11 +851,13 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
 
   const std::array<uint32_t, 6ull> fullscreenQuadIndices{0, 1, 2, 2, 3, 0};
 
-  m_VertexBuffer.CPUData.Allocate(vertexBufferSize);
-  m_VertexBuffer.CPUData.Write(vertexBufferSize, fullscreenQuadVertices.data());
+  m_VertexBuffer.CPUData.resize(vertexBufferSize);
+  memcpy(m_VertexBuffer.CPUData.data(), fullscreenQuadVertices.data(),
+         vertexBufferSize);
 
-  m_IndexBuffer.CPUData.Allocate(indexBufferSize);
-  m_IndexBuffer.CPUData.Write(indexBufferSize, fullscreenQuadIndices.data());
+  m_IndexBuffer.CPUData.resize(indexBufferSize);
+  memcpy(m_IndexBuffer.CPUData.data(), fullscreenQuadIndices.data(),
+         indexBufferSize);
 
   /* Vertex Staging Buffer */
   {
@@ -896,7 +898,7 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     void *data;
     vkMapMemory(m_LogicalDevice, vertexStagingBufferMemory, 0, vertexBufferSize,
                 0, &data);
-    memcpy(data, m_VertexBuffer.CPUData.Data(), vertexBufferSize);
+    memcpy(data, m_VertexBuffer.CPUData.data(), vertexBufferSize);
     vkUnmapMemory(m_LogicalDevice, vertexStagingBufferMemory);
     /* Vertex Staging Buffer */
 
@@ -983,7 +985,7 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     void *data;
     vkMapMemory(m_LogicalDevice, stagingIndexBufferMemory, 0, vertexBufferSize,
                 0, &data);
-    memcpy(data, m_IndexBuffer.CPUData.Data(), indexBufferSize);
+    memcpy(data, m_IndexBuffer.CPUData.data(), indexBufferSize);
     vkUnmapMemory(m_LogicalDevice, stagingIndexBufferMemory);
 
     VkBufferCreateInfo indexBufferCreateInfo;
