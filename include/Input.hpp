@@ -140,7 +140,12 @@ enum : std::uint8_t {
 
 class Input {
 public:
-  static bool IsKeyPressed(const KeyCode keyCode) noexcept;
+  void SetKeyState(const KeyCode keyCode, const bool pressed) noexcept;
+
+  [[nodiscard]]
+  bool IsKeyPressed(const KeyCode keyCode) const noexcept;
 
 private:
+  std::array<uint8_t, static_cast<std::size_t>(Key::KEYCODES_END)>
+      m_KeyStates{};
 };

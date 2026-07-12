@@ -14,9 +14,11 @@ int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,
                               _In_ LPWSTR lpCmdLine, _In_ int nShowCmd) {
   (void)hPrevInstance;
   (void)lpCmdLine;
+  (void)hInstance;
 
-  auto application =
-      new VulkanApp(VulkanApp::ERenderMethod::Compute, hInstance, nShowCmd);
+  ::ShowWindow(::GetConsoleWindow(), nShowCmd != 0 ? SW_SHOW : SW_HIDE);
+
+  auto application{new VulkanApp(VulkanApp::ERenderMethod::Compute)};
   if (application->Initialize()) {
     if (application->Run()) {
 
