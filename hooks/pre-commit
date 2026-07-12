@@ -14,7 +14,9 @@ if [ $FORMAT_STATUS -ne 0 ]; then
 	exit $FORMAT_STATUS
 fi
 
-clang-tidy --quiet $FILES -- -std=c++23 -I.
+TIDY_FILES=$(echo "$FILES" | grep '\.cpp$')
+
+clang-tidy --quiet -p=build/ninja $TIDY_FILES
 TIDY_STATUS=$?
 
 if [ $TIDY_STATUS -ne 0 ]; then
