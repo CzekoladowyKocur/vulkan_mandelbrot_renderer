@@ -1,5 +1,5 @@
-#include "include/Window.h"
-#include "include/Application.h"
+#include "include/Window.hpp"
+#include "include/Application.hpp"
 #include <cassert>
 #include <utility>
 #include <windowsx.h>

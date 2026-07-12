@@ -4,9 +4,9 @@
 #include <print>
 #include <vulkan/vulkan.h>
 
-#include "include/Core.h"
+#include "include/Core.hpp"
 
-#include "include/Application.h"
+#include "include/Application.hpp"
 
 #undef APIENTRY
 int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,

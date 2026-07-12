@@ -1,5 +1,5 @@
 #pragma once
-#include "Core.h"
+#include "Core.hpp"
 
 class Platform {
 public:

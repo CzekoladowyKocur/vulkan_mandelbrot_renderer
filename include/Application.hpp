@@ -1,8 +1,8 @@
 #pragma once
-#include "include/Core.h"
-#include "include/Image2D.h"
-#include "include/VulkanTypes.h"
-#include "include/Window.h"
+#include "include/Core.hpp"
+#include "include/Image2D.hpp"
+#include "include/VulkanTypes.hpp"
+#include "include/Window.hpp"
 #include <string_view>
 
 class VulkanApp {

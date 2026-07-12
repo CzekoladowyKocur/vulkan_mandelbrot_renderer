@@ -1,4 +1,4 @@
-#include "include/Platform.h"
+#include "include/Platform.hpp"
 
 INTERNALSCOPE double s_SystemClockFrequency;
 INTERNALSCOPE LARGE_INTEGER s_SystemClockStartTime;
