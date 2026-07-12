@@ -97,7 +97,7 @@ private:
   ERenderMethod m_RenderMethod;
   bool m_Running;
   std::unique_ptr<window> m_window;
-  Input m_Input;
+  input m_input;
   /* Vulkan API */
   /* Instance (loads the vulkan dll driver) */
   VkInstance m_Instance;

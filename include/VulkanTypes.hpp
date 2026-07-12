@@ -1,4 +1,5 @@
 #pragma once
+#include "include/Core.hpp"
 #include <cassert>
 #include <cstdio>
 #include <expected>
