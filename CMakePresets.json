@@ -29,6 +29,7 @@
       "displayName": "Ninja Generator",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
+      "architecture": {"value": "x64", "strategy": "external"},
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_GENERATOR_PLATFORM": ""
