@@ -5,12 +5,21 @@ FILES=$(git diff --cached --name-only --diff-filter=ACMR -- 'src/*.cpp' 'src/*.h
 [ -z "$FILES" ] && exit 0
 
 echo "$FILES" | xargs clang-format --dry-run --Werror
-STATUS=$?
+FORMAT_STATUS=$?
 
-if [ $STATUS -ne 0 ]; then
+if [ $FORMAT_STATUS -ne 0 ]; then
 	echo "" >&2
 	echo "pre-commit: formatting check failed. Fix with:" >&2
 	echo "  clang-format -i $(echo $FILES | tr '\n' ' ')" >&2
+	exit $FORMAT_STATUS
 fi
 
-exit $STATUS
+echo "$FILES" | xargs clang-tidy --quiet -- -std=c++23 -I.
+TIDY_STATUS=$?
+
+if [ $TIDY_STATUS -ne 0 ]; then
+	echo "" >&2
+	echo "pre-commit: clang-tidy check failed, fix the issues above" >&2
+fi
+
+exit $TIDY_STATUS
