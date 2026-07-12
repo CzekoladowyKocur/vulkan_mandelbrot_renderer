@@ -1,7 +1,7 @@
 #include <Windows.h>
+#include <cstdint>
 #include <cstdio>
-#include <stdint.h>
-#include <stdio.h>
+#include <print>
 #include <vulkan/vulkan.h>
 
 #include "include/Core.h"
@@ -15,13 +15,13 @@ int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,
   (void)hPrevInstance;
   (void)lpCmdLine;
 
-  VulkanApp *application =
+  auto application =
       new VulkanApp(VulkanApp::ERenderMethod::Graphics, hInstance, nShowCmd);
   if (application->Initialize()) {
     if (application->Run()) {
 
     } else {
-      printf("Failed to run application properly\n");
+      std::println("Failed to run application properly");
       delete application;
       return EXIT_FAILURE;
     }
@@ -29,17 +29,17 @@ int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,
     if (application->Shutdown()) {
       /* Everything went well up to this point.. weird.. */
     } else {
-      printf("Failed to shutdown application properly\n");
+      std::println("Failed to shutdown application properly");
       delete application;
       return EXIT_FAILURE;
     }
   } else {
-    printf("Failed to initialize application\n");
+    std::println("Failed to initialize application");
     delete application;
     return EXIT_FAILURE;
   } /* Application Initialize */
 
-  printf("Shutting down. . .\n");
+  std::println("Shutting down. . .");
   delete application;
   return EXIT_SUCCESS;
 }

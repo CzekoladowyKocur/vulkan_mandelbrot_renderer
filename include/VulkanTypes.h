@@ -4,7 +4,7 @@
 
 #ifdef APP_DEBUG
 #define VK_CHECK(x)                                                            \
-  if (x != VK_SUCCESS)                                                         \
+  if ((x) != VK_SUCCESS)                                                       \
   assert(false)
 #else
 #define VK_CHECK(x) x

@@ -18,15 +18,15 @@
 #include "include/Image2D.h"
 
 Image2D::Image2D(const std::string_view assetPath)
-    : m_AssetPath(assetPath), m_Properties(), m_CPUData(),
-      m_ImageHandle(VK_NULL_HANDLE), m_ImageView(VK_NULL_HANDLE),
-      m_Sampler(VK_NULL_HANDLE) {
+    : m_AssetPath(assetPath), m_Properties(), m_CPUData() {
   assert(Load());
 
   const VkDevice device = VulkanApp::GetInstance()->m_LogicalDevice;
-  const VkFormat format = m_Properties.ChannelCount == 3
-                              ? VK_FORMAT_R8G8B8A8_UNORM
-                              : VK_FORMAT_R8G8B8A8_UNORM;
+  // const VkFormat format = m_Properties.ChannelCount == 3
+  //                             ? VK_FORMAT_R8G8B8A8_UNORM
+  //                              : VK_FORMAT_R8G8B8A8_UNORM;
+
+  const VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
   uint32_t imageUsageFlags = 0;
   imageUsageFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;
   imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -239,7 +239,6 @@ VkSampler Image2D::GetImageSampler() { return m_Sampler; }
 bool Image2D::Load() {
   assert(std::filesystem::exists(m_AssetPath));
   constexpr uint64_t sizeOfPixel = sizeof(uint8_t) * 4;
-  const std::filesystem::path fileExtension = m_AssetPath.extension();
 
   int32_t width, height, channelCount;
   stbi_uc *pixelData = stbi_load(m_AssetPath.string().c_str(), &width, &height,
@@ -251,9 +250,9 @@ bool Image2D::Load() {
                                  static_cast<uint32_t>(channelCount));
 
   m_ImageMemorySpace =
-      static_cast<VkDeviceSize>(static_cast<uint32_t>(width) *
-                                static_cast<uint32_t>(height) * sizeOfPixel);
+      static_cast<VkDeviceSize>(static_cast<uint64_t>(width) *
+                                static_cast<uint64_t>(height) * sizeOfPixel);
 
-  m_CPUData.Set(m_ImageMemorySpace, pixelData);
+  m_CPUData.Set(static_cast<size_t>(m_ImageMemorySpace), pixelData);
   return true;
 }

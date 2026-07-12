@@ -2,7 +2,7 @@
 #include "include/Core.h"
 #include "include/Input.h"
 
-enum class EEventType {
+enum class EEventType : std::uint8_t {
   None = 0,
   WindowClose,
   WindowResize,
@@ -17,7 +17,10 @@ public:
 
   ~Event() = default;
 
-  virtual EEventType GetEventType() const { return m_Flags; }
+  [[nodiscard]]
+  virtual EEventType GetEventType() const {
+    return m_Flags;
+  }
 
 protected:
   EEventType m_Flags;
@@ -38,6 +41,8 @@ public:
       : Event(EEventType::WindowResize), m_Width(width), m_Height(height) {}
 
   virtual ~WindowResizeEvent() = default;
+
+  [[nodiscard]]
   const std::pair<uint32_t, uint32_t> GetSize() const {
     return {m_Width, m_Height};
   }
@@ -55,7 +60,7 @@ struct WindowProperties {
   WindowProperties(const uint32_t width, const uint32_t height,
                    const bool showCMD, WindowCallbackFunction function)
       : Width(width), Height(height), ShowCMD(showCMD),
-        CallbackFunction(function) {}
+        CallbackFunction(std::move(function)) {}
 };
 
 class Window {
@@ -66,12 +71,15 @@ public:
 
   void PollEvents();
   bool KeyPressed(const KeyCode keyCode);
+
+  [[nodiscard]]
   const std::pair<uint32_t, uint32_t> GetSize() const;
 
+  [[nodiscard]]
   const std::pair<HWND, HINSTANCE> GetInternalState() const;
 
 private:
-  HWND m_Handle;
+  HWND m_Handle{nullptr};
   HINSTANCE m_HInstance;
   WindowProperties m_WindowProperties;
 

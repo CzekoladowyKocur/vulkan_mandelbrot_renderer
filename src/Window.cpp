@@ -1,6 +1,6 @@
 #include "include/Window.h"
 #include "include/Application.h"
-#include <assert.h>
+#include <cassert>
 #include <utility>
 #include <windowsx.h>
 
@@ -15,12 +15,12 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message,
 
 Window::Window(const HINSTANCE hInstance,
                WindowProperties &&windowProperties) noexcept
-    : m_Handle(NULL), m_HInstance(hInstance),
-      m_WindowProperties(std::move(windowProperties)), m_KeyStates({0}) {
+    : m_HInstance(hInstance), m_WindowProperties(std::move(windowProperties)),
+      m_KeyStates({0}) {
   WNDCLASSEXA windowClass;
   windowClass.hInstance = m_HInstance;
   windowClass.lpszClassName = Utilities::g_WindowClassName;
-  windowClass.lpszMenuName = NULL;
+  windowClass.lpszMenuName = nullptr;
   windowClass.lpfnWndProc = Win32ProcedureEventFunctionCallback;
   windowClass.hIcon =
       LoadIconA(m_HInstance, reinterpret_cast<LPCSTR>(IDI_APPLICATION));
@@ -36,8 +36,8 @@ Window::Window(const HINSTANCE hInstance,
   windowClass.cbClsExtra = NULL;
 
   if (!RegisterClassExA(&windowClass)) {
-    MessageBoxExA(NULL, "Failed to register window class", NULL, MB_ICONERROR,
-                  LANG_SYSTEM_DEFAULT);
+    MessageBoxExA(nullptr, "Failed to register window class", nullptr,
+                  MB_ICONERROR, LANG_SYSTEM_DEFAULT);
     assert(false);
   }
 
@@ -45,11 +45,11 @@ Window::Window(const HINSTANCE hInstance,
                              "Vulkan Mandelbrot Set Renderer",
                              WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                              static_cast<int>(m_WindowProperties.Width),
-                             static_cast<int>(m_WindowProperties.Height), NULL,
-                             NULL, m_HInstance, this);
+                             static_cast<int>(m_WindowProperties.Height),
+                             nullptr, nullptr, m_HInstance, this);
 
   if (!m_Handle) {
-    MessageBoxExA(NULL, "Failed to create window", NULL, MB_ICONERROR,
+    MessageBoxExA(nullptr, "Failed to create window", nullptr, MB_ICONERROR,
                   LANG_SYSTEM_DEFAULT);
     assert(false);
   }
@@ -70,7 +70,7 @@ Window::~Window() {
 
 void Window::PollEvents() {
   INTERNALSCOPE MSG message;
-  while (PeekMessageA(&message, NULL, 0, 0, PM_REMOVE)) {
+  while (PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
     TranslateMessage(&message);
     DispatchMessageA(&message);
   }
@@ -91,17 +91,15 @@ const std::pair<HWND, HINSTANCE> Window::GetInternalState() const {
 LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message,
                                                      WPARAM wParam,
                                                      LPARAM lParam) {
-  Window *window =
+  auto *window =
       reinterpret_cast<Window *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
 
   switch (message) {
   case WM_CREATE: {
-    CREATESTRUCTA *pCreateStruct = reinterpret_cast<CREATESTRUCTA *>(lParam);
-    Window *_UserData =
-        reinterpret_cast<Window *>(pCreateStruct->lpCreateParams);
+    auto *pCreateStruct = reinterpret_cast<CREATESTRUCTA *>(lParam);
+    auto *userData = reinterpret_cast<Window *>(pCreateStruct->lpCreateParams);
     SetWindowLongPtrA(hwnd, GWLP_USERDATA,
-                      reinterpret_cast<LONG_PTR>(_UserData));
-    window = reinterpret_cast<Window *>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+                      reinterpret_cast<LONG_PTR>(userData));
 
     POINT point;
     GetCursorPos(reinterpret_cast<LPPOINT>(&point));
@@ -135,9 +133,9 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message,
 
     RECT rectangle;
     GetClientRect(hwnd, &rectangle);
-    const uint32_t actualWidth =
+    const auto actualWidth =
         static_cast<uint32_t>(rectangle.right - rectangle.left);
-    const uint32_t actualHeight =
+    const auto actualHeight =
         static_cast<uint32_t>(rectangle.bottom - rectangle.top);
 
     window->m_WindowProperties.Width = actualWidth;
@@ -179,7 +177,7 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message,
         static_cast<uint8_t>(false);
     return Utilities::EventHandled;
   }
-
+    /*
   case WM_MBUTTONDOWN: {
     return Utilities::EventHandled;
   }
@@ -187,6 +185,7 @@ LRESULT CALLBACK Win32ProcedureEventFunctionCallback(HWND hwnd, UINT message,
   case WM_MBUTTONUP: {
     return Utilities::EventHandled;
   }
+                   */
 
   case WM_MOUSEMOVE: {
     const int xPosition = GET_X_LPARAM(lParam);

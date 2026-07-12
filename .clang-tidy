@@ -1,9 +1,9 @@
----
 Checks: >
   -*,
   bugprone-*,
   clang-analyzer-*,
   performance-*,
+  -performance-no-int-to-ptr,
   modernize-*,
   -modernize-use-trailing-return-type,
   -bugprone-easily-swappable-parameters

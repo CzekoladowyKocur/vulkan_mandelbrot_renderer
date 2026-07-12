@@ -1,16 +1,16 @@
 #pragma once
 #define INTERNALSCOPE static
 #define APP_CLAMP(value, min, max)                                             \
-  (value < min) ? min : (value > max) ? max : value;
+  ((value) < (min) ? (min) : (value) > (max) ? (max) : (value))
 /* Win32 */
 #include <Windows.h>
 /* STD */
 #include <array>
-#include <assert.h>
+#include <cassert>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -19,8 +19,6 @@ public:
   using Byte_t = uint8_t;
 
 public:
-  Buffer() : m_Data(nullptr), m_Size(0) {}
-
   ~Buffer() {
     if (m_Data)
       delete[] m_Data;
@@ -58,11 +56,17 @@ public:
     m_Size = 0;
   }
 
-  void *Data() const { return m_Data; }
+  [[nodiscard]]
+  void *Data() const {
+    return m_Data;
+  }
 
-  std::size_t Size() const { return m_Size; }
+  [[nodiscard]]
+  std::size_t Size() const {
+    return m_Size;
+  }
 
 private:
-  Byte_t *m_Data;
-  std::size_t m_Size;
+  Byte_t *m_Data{nullptr};
+  std::size_t m_Size{0ull};
 };

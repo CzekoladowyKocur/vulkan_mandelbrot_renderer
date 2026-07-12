@@ -7,7 +7,7 @@ using MouseCode = uint16_t;
 #define DEFINE_KEY(name, code) KEY_##name = code
 
 namespace Key {
-enum {
+enum : std::uint8_t {
   DEFINE_KEY(BACKSPACE, 0x08),
   DEFINE_KEY(ENTER, 0x0D),
   DEFINE_KEY(TAB, 0x09),
@@ -140,7 +140,7 @@ enum {
 
 class Input {
 public:
-  static bool IsKeyPressed(const KeyCode keyCode);
+  static bool IsKeyPressed(const KeyCode keyCode) noexcept;
 
 private:
 };
