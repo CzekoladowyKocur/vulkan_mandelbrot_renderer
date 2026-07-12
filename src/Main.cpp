@@ -41,6 +41,8 @@ int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,
   (void)hPrevInstance;
   (void)lpCmdLine;
 
+  ::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
   const WNDCLASSEXA window_class{
       .cbSize{sizeof(window_class)},
       .style{0u},
