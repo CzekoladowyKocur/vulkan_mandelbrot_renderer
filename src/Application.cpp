@@ -28,7 +28,7 @@ constexpr std::size_t RenderedImageSize =
 
 VulkanApp *VulkanApp::s_ApplicationInstance = nullptr;
 VulkanApp::VulkanApp(const ERenderMethod renderMethod)
-    : m_RenderMethod(renderMethod), m_Running(true), m_window(nullptr),
+    : m_RenderMethod(renderMethod), m_Running(true), m_window(std::nullopt),
       /* Vulkan API */
       m_Instance(VK_NULL_HANDLE), m_Surface(VK_NULL_HANDLE),
       m_PhysicalDeviceProperties(), m_PhysicalDeviceFeatures(),
@@ -92,11 +92,10 @@ bool VulkanApp::Initialize() {
       return false;
     }
 
-    auto created{
-        window::create(window_props{.width{1280u},
-                                    .height{720u},
-                                    .name{"Vulkan Mandelbrot Set Renderer"},
-                                    .maximized{true}})};
+    auto created{window::create({.width{1280u},
+                                 .height{720u},
+                                 .name{"Vulkan Mandelbrot Set Renderer"},
+                                 .maximized{true}})};
 
     if (!created) {
       std::println("Failed to initialize window: {}",
@@ -104,7 +103,7 @@ bool VulkanApp::Initialize() {
       return false;
     }
 
-    m_window = std::make_unique<window>(std::move(*created));
+    m_window = std::move(*created);
 
     if (!CreateSurface()) {
       std::println("Failed to create vulkan surface");
@@ -157,10 +156,16 @@ bool VulkanApp::Run() {
     return true;
   }
 
+  if (!m_window.has_value()) {
+    return false;
+  }
+
+  window &active_window{*m_window};
+
   while (m_Running) {
     /* Poll events */
 
-    m_window->poll([this](const event &polled) { OnEvent(polled); });
+    active_window.poll([this](const event &polled) { OnEvent(polled); });
     const double deltaTime = Platform::GetAbsoluteTime() - timer;
     timer = Platform::GetAbsoluteTime();
 
@@ -437,6 +442,10 @@ bool VulkanApp::CreateInstance() {
 }
 
 bool VulkanApp::CreateSurface() {
+  if (!m_window.has_value()) {
+    return false;
+  }
+
   const auto surface{m_window->get_surface(m_Instance)};
 
   if (!surface) {
@@ -1699,6 +1708,10 @@ bool VulkanApp::RecordComputeCommandBuffers() {
 
 void VulkanApp::UpdateFrameData(const float deltaTime) {
   INTERNALSCOPE float zoomScale = 1.0f;
+  if (!m_window.has_value()) {
+    return;
+  }
+
   const auto [windowWidth, windowHeight] = m_window->get_size();
 
   if (windowWidth <= 0 || windowHeight <= 0)
@@ -1838,9 +1851,10 @@ void VulkanApp::DrawFrame() {
       &m_ImageIndex);
 
   if (result != VK_SUCCESS) {
-
-    const auto [windowWidth, windowHeight] = m_window->get_size();
-    RecreateSwapchain(windowWidth, windowHeight);
+    if (m_window.has_value()) {
+      const auto [windowWidth, windowHeight] = m_window->get_size();
+      RecreateSwapchain(windowWidth, windowHeight);
+    }
     return;
   }
 
@@ -1880,7 +1894,7 @@ void VulkanApp::DrawFrame() {
 
   result = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
 
-  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+  if (result == VK_ERROR_OUT_OF_DATE_KHR && m_window.has_value()) {
     const auto [windowWidth, windowHeight] = m_window->get_size();
     RecreateSwapchain(windowWidth, windowHeight);
   }
@@ -1891,6 +1905,10 @@ void VulkanApp::DrawFrame() {
 void VulkanApp::RecreateSwapchain(const uint32_t width, const uint32_t height) {
   m_SwapchainExtent.width = width;
   m_SwapchainExtent.height = height;
+
+  if (!m_window.has_value()) {
+    return;
+  }
 
   while (m_SwapchainExtent.width == 0 || m_SwapchainExtent.height == 0) {
     m_window->poll([this](const event &polled) { OnEvent(polled); });

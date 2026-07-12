@@ -3,7 +3,7 @@
 #include "include/Image2D.hpp"
 #include "include/VulkanTypes.hpp"
 #include "include/window.hpp"
-#include <memory>
+#include <optional>
 #include <string_view>
 
 class VulkanApp {
@@ -96,7 +96,7 @@ private:
 private:
   ERenderMethod m_RenderMethod;
   bool m_Running;
-  std::unique_ptr<window> m_window;
+  std::optional<window> m_window;
   input m_input;
   /* Vulkan API */
   /* Instance (loads the vulkan dll driver) */
