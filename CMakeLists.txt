@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(VULKAN_SDK_REQUIRED_VERSION 1.3)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 find_package(Vulkan ${VULKAN_SDK_REQUIRED_VERSION} REQUIRED COMPONENTS glslc) 
 
@@ -53,8 +54,8 @@ target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SO
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
-add_library(lodepng INTERFACE)
-target_include_directories(lodepng INTERFACE ${lodepng_SOURCE_DIR})
+add_library(lodepng STATIC ${lodepng_SOURCE_DIR}/lodepng.cpp)
+target_include_directories(lodepng SYSTEM PUBLIC ${lodepng_SOURCE_DIR})
 
 target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
 	Vulkan::Vulkan
@@ -98,6 +99,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		/clang:-Wno-old-style-cast
 		/clang:-Wno-newline-eof
 		/clang:-Wno-error=delete-incomplete
+		/clang:-Wno-braced-scalar-init
+		/clang:-Wno-missing-designated-field-initializers
+		/clang:-std=c++23
 	)
 elseif(MSVC)
 	target_compile_options(vulkan_mandelbrot_renderer PRIVATE

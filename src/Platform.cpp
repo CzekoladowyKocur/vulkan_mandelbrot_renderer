@@ -3,10 +3,10 @@
 INTERNALSCOPE double s_SystemClockFrequency;
 INTERNALSCOPE LARGE_INTEGER s_SystemClockStartTime;
 
-static auto AutoInitializePlatformFunction = []() -> bool {
+static auto AutoInitializePlatformFunction = []() noexcept -> bool {
   LARGE_INTEGER frequency;
   QueryPerformanceFrequency(&frequency);
-  s_SystemClockFrequency = 1.0 / (double)frequency.QuadPart;
+  s_SystemClockFrequency = 1.0 / static_cast<double>(frequency.QuadPart);
   QueryPerformanceCounter(&s_SystemClockStartTime);
 
   return true;

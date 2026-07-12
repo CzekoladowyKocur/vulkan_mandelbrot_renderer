@@ -31,10 +31,10 @@ private:
   ImageProperties m_Properties;
   Buffer m_CPUData;
 
-  VkImage m_ImageHandle;
-  VkDeviceMemory m_ImageMemory;
+  VkImage m_ImageHandle{VK_NULL_HANDLE};
+  VkDeviceMemory m_ImageMemory{VK_NULL_HANDLE};
   VkDeviceSize m_ImageMemorySpace;
 
-  VkImageView m_ImageView;
-  VkSampler m_Sampler;
+  VkImageView m_ImageView{VK_NULL_HANDLE};
+  VkSampler m_Sampler{VK_NULL_HANDLE};
 };

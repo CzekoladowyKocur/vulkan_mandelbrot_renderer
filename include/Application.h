@@ -7,7 +7,7 @@
 
 class VulkanApp {
 public:
-  enum class ERenderMethod {
+  enum class ERenderMethod : std::uint8_t {
     Graphics,
     Compute,
     Default = Graphics,
@@ -79,7 +79,10 @@ private:
     float CenterY;
     float ZoomScale;
     int32_t IterationCount;
-    float PADDING[3];
+
+    float padding_x;
+    float padding_y;
+    float padding_z;
   };
 
   struct QueueFamilyIndices {
