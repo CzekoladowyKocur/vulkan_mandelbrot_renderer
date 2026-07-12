@@ -2,3 +2,4 @@
 Language: Cpp
 BasedOnStyle: LLVM
 Standard: Latest
+InsertNewlineAtEOF: true
