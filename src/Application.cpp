@@ -1,5 +1,6 @@
 #include "include\Application.hpp"
 #include "include\input.hpp"
+#include <algorithm>
 #include <chrono>
 #include <glm/glm.hpp>
 #include <print>
@@ -657,11 +658,11 @@ bool VulkanApp::CreateSwapchain() {
 
   /* Clamp */
   m_SwapchainExtent.width =
-      APP_CLAMP(m_SwapchainExtent.width, minSwapchainImageExtent.width,
-                maxSwapchainImageExtent.width);
+      std::clamp(m_SwapchainExtent.width, minSwapchainImageExtent.width,
+                 maxSwapchainImageExtent.width);
   m_SwapchainExtent.height =
-      APP_CLAMP(m_SwapchainExtent.height, minSwapchainImageExtent.height,
-                maxSwapchainImageExtent.height);
+      std::clamp(m_SwapchainExtent.height, minSwapchainImageExtent.height,
+                 maxSwapchainImageExtent.height);
 
   const uint32_t minImageCount = m_SurfaceCapabilities.minImageCount;
   const uint32_t maxImageCount = m_SurfaceCapabilities.maxImageCount;
@@ -1708,7 +1709,7 @@ bool VulkanApp::RecordComputeCommandBuffers() {
 }
 
 void VulkanApp::UpdateFrameData(const float deltaTime) {
-  INTERNALSCOPE float zoomScale = 1.0f;
+  static float zoomScale = 1.0f;
   if (!m_window.has_value()) {
     return;
   }
@@ -1720,7 +1721,7 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
 
   const float aspectRatio =
       static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
-  INTERNALSCOPE UBO ubo = {
+  static UBO ubo = {
       .AspectRatio{aspectRatio},
       .CenterX{0.0f},
       .CenterY{-0.5f},
