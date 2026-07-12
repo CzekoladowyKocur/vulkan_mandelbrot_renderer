@@ -68,6 +68,13 @@ target_compile_definitions(vulkan_mandelbrot_renderer PRIVATE
 	$<$<CONFIG:Debug>:APP_DEBUG>
 )
 
+option(ENABLE_ASAN "Build with AddressSanitizer" OFF)
+
+if(ENABLE_ASAN AND MSVC)
+	target_compile_options(vulkan_mandelbrot_renderer PRIVATE /fsanitize=address)
+	target_link_options(vulkan_mandelbrot_renderer PRIVATE /INCREMENTAL:NO)
+endif()
+
 if(MSVC)
 	target_link_options(vulkan_mandelbrot_renderer PRIVATE 
 		"/ENTRY:wWinMainCRTStartup"
