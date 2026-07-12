@@ -22,7 +22,7 @@ public:
   bool Run();
   bool Shutdown();
 
-  void OnEvent(Event &event);
+  void OnEvent(const event &polled_event);
 
 public:
   static bool Close();

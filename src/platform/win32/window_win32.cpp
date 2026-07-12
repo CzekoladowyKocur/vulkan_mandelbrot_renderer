@@ -124,7 +124,7 @@ window::get_surface(const VkInstance instance) noexcept {
   return surface;
 }
 
-void window::poll(const function_ref<void(Event &)> callback) noexcept {
+void window::poll(const function_ref<void(const event &)> callback) noexcept {
   const LONG_PTR dwNewCallback{reinterpret_cast<LONG_PTR>(&callback)};
   ::SetWindowLongPtrA(m_detail->hwnd, g_callback_slot, dwNewCallback);
 
@@ -161,19 +161,19 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
   auto *const state{reinterpret_cast<win32_window_state *>(
       ::GetWindowLongPtrA(hwnd, GWLP_USERDATA))};
 
-  auto *const callback{reinterpret_cast<const function_ref<void(Event &)> *>(
-      ::GetWindowLongPtrA(hwnd, g_callback_slot))};
+  auto *const callback{
+      reinterpret_cast<const function_ref<void(const event &)> *>(
+          ::GetWindowLongPtrA(hwnd, g_callback_slot))};
 
-  const auto dispatch{[callback](Event &event) noexcept {
+  const auto dispatch{[callback](const event &dispatched) noexcept {
     if (callback != nullptr) {
-      (*callback)(event);
+      (*callback)(dispatched);
     }
   }};
 
   switch (message) {
   case WM_CLOSE: {
-    WindowCloseEvent event;
-    dispatch(event);
+    dispatch(window_close_event{});
     return event_handled;
   }
 
@@ -183,6 +183,11 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
   }
 
   case WM_SIZE: {
+    if (wParam == SIZE_MINIMIZED) {
+      dispatch(window_minimize_event{});
+      return event_handled;
+    }
+
     RECT rectangle;
     ::GetClientRect(hwnd, &rectangle);
 
@@ -197,23 +202,20 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
       state->height = height;
     }
 
-    WindowResizeEvent event{width, height};
-    dispatch(event);
+    dispatch(window_resize_event{.width{width}, .height{height}});
 
     return event_handled;
   }
 
-  case WM_KEYDOWN: {
-    KeyPressedEvent event{static_cast<KeyCode>(wParam)};
-    dispatch(event);
-
+  case WM_KEYDOWN:
+  case WM_SYSKEYDOWN: {
+    dispatch(key_pressed_event{.key_code{static_cast<KeyCode>(wParam)}});
     return event_handled;
   }
 
-  case WM_KEYUP: {
-    KeyReleasedEvent event{static_cast<KeyCode>(wParam)};
-    dispatch(event);
-
+  case WM_KEYUP:
+  case WM_SYSKEYUP: {
+    dispatch(key_released_event{.key_code{static_cast<KeyCode>(wParam)}});
     return event_handled;
   }
 

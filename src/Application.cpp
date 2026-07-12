@@ -159,7 +159,7 @@ bool VulkanApp::Run() {
   while (m_Running) {
     /* Poll events */
 
-    m_window->poll([this](Event &event) { OnEvent(event); });
+    m_window->poll([this](const event &polled) { OnEvent(polled); });
     const double deltaTime = Platform::GetAbsoluteTime() - timer;
     timer = Platform::GetAbsoluteTime();
 
@@ -267,37 +267,29 @@ bool VulkanApp::Shutdown() {
   return true;
 }
 
-void VulkanApp::OnEvent(Event &event) {
-  switch (event.GetEventType()) {
-  case EEventType::WindowClose: {
-    m_Running = false;
+void VulkanApp::OnEvent(const event &polled_event) {
+  std::visit(overloaded{
+                 [this](const window_close_event &) { m_Running = false; },
 
-    break;
-  }
+                 [this](const window_resize_event &resize) {
+                   m_SwapchainExtent.width = resize.width;
+                   m_SwapchainExtent.height = resize.height;
 
-  case EEventType::WindowResize: {
-    auto *e{static_cast<WindowResizeEvent *>(&event)};
-    const auto [windowWidth, windowHeight] = e->GetSize();
-    m_SwapchainExtent.width = windowWidth;
-    m_SwapchainExtent.height = windowHeight;
+                   std::println("Window resized: [width, height]: {}, {}",
+                                resize.width, resize.height);
+                 },
 
-    std::println("Window resized: [width, height]: {}, {}", windowWidth,
-                 windowHeight);
-    break;
-  }
+                 [](const window_minimize_event &) {},
 
-  case EEventType::KeyPressed:
-  case EEventType::KeyReleased: {
-    auto *e{static_cast<KeyEvent *>(&event)};
-    m_Input.SetKeyState(e->GetKeyCode(),
-                        event.GetEventType() == EEventType::KeyPressed);
-    break;
-  }
+                 [this](const key_pressed_event &key) {
+                   m_Input.SetKeyState(key.key_code, true);
+                 },
 
-  default: {
-    break;
-  }
-  }
+                 [this](const key_released_event &key) {
+                   m_Input.SetKeyState(key.key_code, false);
+                 },
+             },
+             polled_event);
 }
 
 bool VulkanApp::Close() {
@@ -1900,7 +1892,7 @@ void VulkanApp::RecreateSwapchain(const uint32_t width, const uint32_t height) {
   m_SwapchainExtent.height = height;
 
   while (m_SwapchainExtent.width == 0 || m_SwapchainExtent.height == 0) {
-    m_window->poll([this](Event &event) { OnEvent(event); });
+    m_window->poll([this](const event &polled) { OnEvent(polled); });
     const auto [windowWidth, windowHeight] = m_window->get_size();
 
     m_SwapchainExtent.width = windowWidth;
