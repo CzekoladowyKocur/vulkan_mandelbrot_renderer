@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <print>
 #include <vulkan/vulkan.h>
 
@@ -9,28 +10,25 @@
 #include "include/Application.hpp"
 
 static int vulkan_app_main() {
-  auto application{new VulkanApp(VulkanApp::ERenderMethod::Compute)};
+  const auto application{
+      std::make_unique<VulkanApp>(VulkanApp::ERenderMethod::Graphics)};
 
   if (!application->Initialize()) {
     std::println("Failed to initialize application");
-    delete application;
     return EXIT_FAILURE;
   }
 
   if (!application->Run()) {
     std::println("Failed to run application properly");
-    delete application;
     return EXIT_FAILURE;
   }
 
   if (!application->Shutdown()) {
     std::println("Failed to shutdown application properly");
-    delete application;
     return EXIT_FAILURE;
   }
 
   std::println("Shutting down. . .");
-  delete application;
   return EXIT_SUCCESS;
 }
 
