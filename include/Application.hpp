@@ -2,7 +2,8 @@
 #include "include/Core.hpp"
 #include "include/Image2D.hpp"
 #include "include/VulkanTypes.hpp"
-#include "include/Window.hpp"
+#include "include/window.hpp"
+#include <optional>
 #include <string_view>
 
 class VulkanApp {
@@ -14,15 +15,14 @@ public:
   };
 
 public:
-  VulkanApp(const ERenderMethod renderMethod, HINSTANCE hInstance,
-            const bool showConsole);
+  explicit VulkanApp(const ERenderMethod renderMethod);
   ~VulkanApp();
 
   bool Initialize();
   bool Run();
   bool Shutdown();
 
-  void OnEvent(Event &event);
+  void OnEvent(const event &polled_event);
 
 public:
   static bool Close();
@@ -96,7 +96,8 @@ private:
 private:
   ERenderMethod m_RenderMethod;
   bool m_Running;
-  Window *m_Window;
+  std::optional<window> m_window;
+  input m_input;
   /* Vulkan API */
   /* Instance (loads the vulkan dll driver) */
   VkInstance m_Instance;
@@ -195,5 +196,4 @@ private:
 
 private:
   friend class Image2D;
-  friend class Input;
 };

@@ -34,11 +34,11 @@ FetchContent_MakeAvailable(
 add_executable(vulkan_mandelbrot_renderer
 	src/Application.cpp
 	src/Image2D.cpp
-	src/Input.cpp
+	src/input.cpp
 	src/LibraryBuild.cpp
 	src/Main.cpp
 	src/Platform.cpp
-	src/Window.cpp
+	src/platform/win32/window_win32.cpp
 )
 
 target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
