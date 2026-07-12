@@ -2,8 +2,6 @@
 
 #include "include/VulkanTypes.hpp"
 
-constexpr LPCSTR g_window_class_name{"VulkanMandelbrotRenderer"};
-
 constexpr int g_callback_slot{0};
 
 [[nodiscard]] static std::unexpected<std::error_code> get_last_error() noexcept;
@@ -59,25 +57,6 @@ window::~window() = default;
 std::expected<void, std::error_code> window::initialize() noexcept {
   m_detail->hinstance = ::GetModuleHandleA(nullptr);
 
-  const WNDCLASSEXA window_class{
-      .cbSize{sizeof(window_class)},
-      .style{0u},
-      .lpfnWndProc{&win32_wndproc},
-      .cbClsExtra{0},
-      .cbWndExtra{sizeof(LONG_PTR)},
-      .hInstance{m_detail->hinstance},
-      .hIcon{::LoadIconA(nullptr, reinterpret_cast<LPCSTR>(IDI_APPLICATION))},
-      .hCursor{::LoadCursorA(nullptr, reinterpret_cast<LPCSTR>(IDC_ARROW))},
-      .hbrBackground{reinterpret_cast<HBRUSH>(::GetStockObject(WHITE_BRUSH))},
-      .lpszMenuName{nullptr},
-      .lpszClassName{g_window_class_name},
-      .hIconSm{nullptr},
-  };
-
-  if (::RegisterClassExA(&window_class) == 0) {
-    return get_last_error();
-  }
-
   const LPCSTR lpClassName{g_window_class_name};
   const LPCSTR lpWindowName{m_detail->name.c_str()};
   const DWORD dwExStyle{WS_EX_LEFT};
@@ -103,6 +82,9 @@ std::expected<void, std::error_code> window::initialize() noexcept {
   const LONG_PTR dwNewUserData{reinterpret_cast<LONG_PTR>(
       static_cast<win32_window_state *>(m_detail.get()))};
   ::SetWindowLongPtrA(m_detail->hwnd, GWLP_USERDATA, dwNewUserData);
+
+  const LONG_PTR dwNewWndProc{reinterpret_cast<LONG_PTR>(&win32_wndproc)};
+  ::SetWindowLongPtrA(m_detail->hwnd, GWLP_WNDPROC, dwNewWndProc);
 
   const int nCmdShow{SW_SHOWMAXIMIZED};
   ::ShowWindow(m_detail->hwnd, nCmdShow);

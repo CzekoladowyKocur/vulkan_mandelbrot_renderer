@@ -83,6 +83,8 @@ public:
       : KeyEvent(EEventType::KeyReleased, keyCode) {}
 };
 
+inline constexpr const char *g_window_class_name{"VulkanMandelbrotRenderer"};
+
 struct window_props final {
   std::uint32_t width{};
   std::uint32_t height{};
