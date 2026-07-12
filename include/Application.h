@@ -1,196 +1,196 @@
 #pragma once
-#include <string_view>
 #include "include/Core.h"
-#include "include/Window.h"
-#include "include/VulkanTypes.h"
 #include "include/Image2D.h"
+#include "include/VulkanTypes.h"
+#include "include/Window.h"
+#include <string_view>
 
-class VulkanApp
-{
+class VulkanApp {
 public:
-	enum class ERenderMethod
-	{
-		Graphics,
-		Compute,
-		Default = Graphics,
-	};
+  enum class ERenderMethod {
+    Graphics,
+    Compute,
+    Default = Graphics,
+  };
+
 public:
-	VulkanApp(const ERenderMethod renderMethod, HINSTANCE hInstance, const bool showConsole);
-	~VulkanApp();
+  VulkanApp(const ERenderMethod renderMethod, HINSTANCE hInstance,
+            const bool showConsole);
+  ~VulkanApp();
 
-	bool Initialize();
-	bool Run();
-	bool Shutdown();	
+  bool Initialize();
+  bool Run();
+  bool Shutdown();
 
-	void OnEvent(Event& event);
+  void OnEvent(Event &event);
+
 public:
-	static bool Close();
-	static VulkanApp* GetInstance();
+  static bool Close();
+  static VulkanApp *GetInstance();
+
 private:
-	/* Vulkan Context Initialization */
-	bool CreateInstance();
-	bool CreateSurface();
-	bool CreateLogicalDevice();
-	bool CreateSwapchain();
-	bool LoadAssets();
+  /* Vulkan Context Initialization */
+  bool CreateInstance();
+  bool CreateSurface();
+  bool CreateLogicalDevice();
+  bool CreateSwapchain();
+  bool LoadAssets();
 
-	bool CreateGraphicsBasedPipeline();
-	bool CreateComputeBasedPipeline();
-	bool AllocateGraphicsCommandBuffers();
-	bool AllocateComputeCommandBuffers();
-	bool RecordGraphicsCommandBuffers();
-	bool RecordComputeCommandBuffers();
+  bool CreateGraphicsBasedPipeline();
+  bool CreateComputeBasedPipeline();
+  bool AllocateGraphicsCommandBuffers();
+  bool AllocateComputeCommandBuffers();
+  bool RecordGraphicsCommandBuffers();
+  bool RecordComputeCommandBuffers();
 
-	void UpdateFrameData(const float deltaTime);
-	void DrawFrame();
-	/* Swapchain */
-	void RecreateSwapchain(const uint32_t width, const uint32_t height);
-	void CleanupSwapchain();
-	/* Pipeline */
-	VkShaderModule CreateShaderModule(const std::string_view filepath) const;
-	uint32_t RetrieveMemoryTypeIndex(VkMemoryPropertyFlags memoryPropertyFlags, uint32_t memoryTypeBits) const;
-	
-	VkCommandBuffer BeginRecordingSingleTimeUseCommands(const bool compute);
-	void EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer, const bool compute);
-	
-	void InsertImageMemoryBarrier(
-		VkCommandBuffer cmdbuffer,
-		VkImage image,
-		VkAccessFlags srcAccessMask,
-		VkAccessFlags dstAccessMask,
-		VkImageLayout oldImageLayout,
-		VkImageLayout newImageLayout,
-		VkPipelineStageFlags srcStageMask,
-		VkPipelineStageFlags dstStageMask,
-		VkImageSubresourceRange subresourceRange);
+  void UpdateFrameData(const float deltaTime);
+  void DrawFrame();
+  /* Swapchain */
+  void RecreateSwapchain(const uint32_t width, const uint32_t height);
+  void CleanupSwapchain();
+  /* Pipeline */
+  VkShaderModule CreateShaderModule(const std::string_view filepath) const;
+  uint32_t RetrieveMemoryTypeIndex(VkMemoryPropertyFlags memoryPropertyFlags,
+                                   uint32_t memoryTypeBits) const;
 
-	void SetImageLayout(
-		VkCommandBuffer cmdbuffer,
-		VkImage image,
-		VkImageLayout oldImageLayout,
-		VkImageLayout newImageLayout,
-		VkPipelineStageFlags srcStageMask,
-		VkPipelineStageFlags dstStageMask);
+  VkCommandBuffer BeginRecordingSingleTimeUseCommands(const bool compute);
+  void EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer,
+                                         const bool compute);
+
+  void InsertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage image,
+                                VkAccessFlags srcAccessMask,
+                                VkAccessFlags dstAccessMask,
+                                VkImageLayout oldImageLayout,
+                                VkImageLayout newImageLayout,
+                                VkPipelineStageFlags srcStageMask,
+                                VkPipelineStageFlags dstStageMask,
+                                VkImageSubresourceRange subresourceRange);
+
+  void SetImageLayout(VkCommandBuffer cmdbuffer, VkImage image,
+                      VkImageLayout oldImageLayout,
+                      VkImageLayout newImageLayout,
+                      VkPipelineStageFlags srcStageMask,
+                      VkPipelineStageFlags dstStageMask);
+
 private:
-	struct UBO
-	{
-		float AspectRatio;
-		float CenterX;
-		float CenterY;
-		float ZoomScale;
-		int32_t IterationCount;
-		float PADDING[3];
-	};	
+  struct UBO {
+    float AspectRatio;
+    float CenterX;
+    float CenterY;
+    float ZoomScale;
+    int32_t IterationCount;
+    float PADDING[3];
+  };
 
-	struct QueueFamilyIndices
-	{
-		int32_t Graphics = -1;
-		int32_t Compute = -1;
-		int32_t Transfer = -1;
-	};
+  struct QueueFamilyIndices {
+    int32_t Graphics = -1;
+    int32_t Compute = -1;
+    int32_t Transfer = -1;
+  };
 
-	QueueFamilyIndices GetQueueFamilyIndices(int32_t flags);
+  QueueFamilyIndices GetQueueFamilyIndices(int32_t flags);
+
 private:
-	ERenderMethod m_RenderMethod;
-	bool m_Running;
-	Window* m_Window;
-	/* Vulkan API */
-	/* Instance (loads the vulkan dll driver) */
-	VkInstance m_Instance;
+  ERenderMethod m_RenderMethod;
+  bool m_Running;
+  Window *m_Window;
+  /* Vulkan API */
+  /* Instance (loads the vulkan dll driver) */
+  VkInstance m_Instance;
 
-	/* Surface*/
-	VkSurfaceKHR m_Surface;
+  /* Surface*/
+  VkSurfaceKHR m_Surface;
 
-	/* Physical Device */
-	VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
-	VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures;
-	mutable VkPhysicalDeviceMemoryProperties m_PhysicalDeviceMemoryProperties;
-	VkPhysicalDevice m_PhysicalDevice;
+  /* Physical Device */
+  VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
+  VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures;
+  mutable VkPhysicalDeviceMemoryProperties m_PhysicalDeviceMemoryProperties;
+  VkPhysicalDevice m_PhysicalDevice;
 
-	QueueFamilyIndices m_QueueIndices;
+  QueueFamilyIndices m_QueueIndices;
 
-	
-	/* Logical Device */
-	VkDevice m_LogicalDevice;
-	VkQueue m_GraphicsQueue;
-	VkQueue m_ComputeQueue;
-	VkQueue m_PresentQueue;
-	VkCommandPool m_GraphicsCommandPool;
-	VkCommandPool m_ComputeCommandPool;
+  /* Logical Device */
+  VkDevice m_LogicalDevice;
+  VkQueue m_GraphicsQueue;
+  VkQueue m_ComputeQueue;
+  VkQueue m_PresentQueue;
+  VkCommandPool m_GraphicsCommandPool;
+  VkCommandPool m_ComputeCommandPool;
 
-	/* Swapchain */
-	VkSwapchainKHR m_Swapchain;
+  /* Swapchain */
+  VkSwapchainKHR m_Swapchain;
 
-	VkSurfaceCapabilitiesKHR m_SurfaceCapabilities;
-	VkSurfaceFormatKHR m_SurfaceFormat;
-	VkPresentModeKHR m_PresentMode;
-	VkExtent2D m_SwapchainExtent;
+  VkSurfaceCapabilitiesKHR m_SurfaceCapabilities;
+  VkSurfaceFormatKHR m_SurfaceFormat;
+  VkPresentModeKHR m_PresentMode;
+  VkExtent2D m_SwapchainExtent;
 
-	/* Swapchain sync */
-	struct {
-		std::vector<VkSemaphore> PresentComplete;
-		std::vector<VkSemaphore> RenderComplete;
-	} m_Semaphores;
+  /* Swapchain sync */
+  struct {
+    std::vector<VkSemaphore> PresentComplete;
+    std::vector<VkSemaphore> RenderComplete;
+  } m_Semaphores;
 
-	uint32_t m_MaxFramesInFlight;
-	uint32_t m_ImageCount;
-	uint32_t m_MinimalImageCount;
+  uint32_t m_MaxFramesInFlight;
+  uint32_t m_ImageCount;
+  uint32_t m_MinimalImageCount;
 
-	std::vector<VkImage> m_SwapchainImages;
-	std::vector<VkImageView> m_SwapchainImageViews;
-	std::vector<VkFramebuffer> m_SwapchainFramebuffers;
+  std::vector<VkImage> m_SwapchainImages;
+  std::vector<VkImageView> m_SwapchainImageViews;
+  std::vector<VkFramebuffer> m_SwapchainFramebuffers;
 
-	/* Swapchain Compatible Renderpass */
-	VkRenderPass m_SwapchainRenderPass;
+  /* Swapchain Compatible Renderpass */
+  VkRenderPass m_SwapchainRenderPass;
 
-	/* Pipelines*/
-	/* Graphics Pipeline */
-	VulkanBuffer m_VertexBuffer;
-	VulkanBuffer m_IndexBuffer;
-	VulkanBuffer m_UBOBuffer;
+  /* Pipelines*/
+  /* Graphics Pipeline */
+  VulkanBuffer m_VertexBuffer;
+  VulkanBuffer m_IndexBuffer;
+  VulkanBuffer m_UBOBuffer;
 
-	VkShaderModule m_VertexShaderModule;
-	VkShaderModule m_FragmentShaderModule;
-	
-	VkPipeline m_GraphicsPipeline;
-	VkPipelineLayout m_GraphicsPipelineLayout;
-	
-	VkDescriptorSetLayout m_GraphicsPipelineUBOBufferDescriptorSetLayout;
-	VkDescriptorSetLayout m_GraphicsPipelineColorPaletteDescriptorSetLayout;
-	VkDescriptorPool m_GraphicsPipelineDescriptorPool;
-	VkDescriptorSet m_GraphicsPipelineUBOBufferDescriptorSet;
-	VkDescriptorSet m_GraphicsPipelineColorPaletteDescriptorSet;
-	std::vector<VkCommandBuffer> m_GraphicsPipelineCommandBuffers;
-	
-	/* Compute Pipeline */
-	VulkanBuffer m_ComputePipelineStorageBuffer;
+  VkShaderModule m_VertexShaderModule;
+  VkShaderModule m_FragmentShaderModule;
 
-	VkShaderModule m_ComputeShaderModule;
-	VkDescriptorSetLayout m_ComputePipelineDescriptorSetLayout;
-	VkDescriptorPool m_ComputePipelineDescriptorPool;
-	VkDescriptorSet m_ComputePipelineStorageBufferDescriptorSet;
+  VkPipeline m_GraphicsPipeline;
+  VkPipelineLayout m_GraphicsPipelineLayout;
 
-	VkPipeline m_ComputePipeline;
-	VkPipelineLayout m_ComputePipelineLayout;
+  VkDescriptorSetLayout m_GraphicsPipelineUBOBufferDescriptorSetLayout;
+  VkDescriptorSetLayout m_GraphicsPipelineColorPaletteDescriptorSetLayout;
+  VkDescriptorPool m_GraphicsPipelineDescriptorPool;
+  VkDescriptorSet m_GraphicsPipelineUBOBufferDescriptorSet;
+  VkDescriptorSet m_GraphicsPipelineColorPaletteDescriptorSet;
+  std::vector<VkCommandBuffer> m_GraphicsPipelineCommandBuffers;
 
-	VkCommandBuffer m_ComputePipelineCommandBuffer;
-	/* Swapchain synchronization */
-	uint32_t m_ImageIndex;
-	uint32_t m_FrameIndex;
+  /* Compute Pipeline */
+  VulkanBuffer m_ComputePipelineStorageBuffer;
 
-	std::vector<VkFence> m_InFlightFences;
-	std::vector<VkFence> m_ImagesInFlight;
+  VkShaderModule m_ComputeShaderModule;
+  VkDescriptorSetLayout m_ComputePipelineDescriptorSetLayout;
+  VkDescriptorPool m_ComputePipelineDescriptorPool;
+  VkDescriptorSet m_ComputePipelineStorageBufferDescriptorSet;
 
-	/* Assets */
-	Image2D* m_ColorPaletteImage;
+  VkPipeline m_ComputePipeline;
+  VkPipelineLayout m_ComputePipelineLayout;
 
-	/* Debug */
-#ifdef APP_DEBUG 
-	VkDebugReportCallbackEXT m_DebugReportCallback;
-#endif	
+  VkCommandBuffer m_ComputePipelineCommandBuffer;
+  /* Swapchain synchronization */
+  uint32_t m_ImageIndex;
+  uint32_t m_FrameIndex;
+
+  std::vector<VkFence> m_InFlightFences;
+  std::vector<VkFence> m_ImagesInFlight;
+
+  /* Assets */
+  Image2D *m_ColorPaletteImage;
+
+  /* Debug */
+#ifdef APP_DEBUG
+  VkDebugReportCallbackEXT m_DebugReportCallback;
+#endif
 private:
-	static VulkanApp* s_ApplicationInstance;
+  static VulkanApp *s_ApplicationInstance;
+
 private:
-	friend class Image2D;
-	friend class Input;
+  friend class Image2D;
+  friend class Input;
 };

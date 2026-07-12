@@ -1,9 +1,9 @@
 #pragma once
 #include "Core.h"
 
-class Platform
-{
+class Platform {
 public:
-	static double GetAbsoluteTime();
+  static double GetAbsoluteTime();
+
 private:
 };
