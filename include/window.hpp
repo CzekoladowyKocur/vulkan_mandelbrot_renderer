@@ -3,6 +3,7 @@
 #include "include/function_ref.hpp"
 #include <expected>
 #include <memory>
+#include <span>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -24,6 +25,9 @@ public:
   [[nodiscard]]
   static std::expected<window, std::error_code>
   create(window_props &&props) noexcept;
+
+  [[nodiscard]]
+  static std::span<const char *const> get_required_extensions() noexcept;
 
   ~window();
 

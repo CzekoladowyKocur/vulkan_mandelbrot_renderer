@@ -100,6 +100,7 @@ bool VulkanApp::Initialize() {
     if (!created) {
       std::println("Failed to initialize window: {}",
                    created.error().message());
+
       return false;
     }
 
@@ -306,20 +307,18 @@ bool VulkanApp::Close() {
 VulkanApp *VulkanApp::GetInstance() { return s_ApplicationInstance; }
 
 bool VulkanApp::CreateInstance() {
+  const auto windowExtensions{window::get_required_extensions()};
+  std::vector<const char *> RequiredExtensions(windowExtensions.begin(),
+                                               windowExtensions.end());
 #if APP_DEBUG
   /* Instance */
-  const std::vector<const char *> RequiredExtensions = {
-      "VK_KHR_win32_surface",
-      "VK_KHR_surface",
-      "VK_EXT_debug_utils",
-      VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-      VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
+  RequiredExtensions.insert(
+      RequiredExtensions.end(),
+      {VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+       VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME});
   const std::vector<const char *> RequestedLayers = {
       "VK_LAYER_KHRONOS_validation"};
 #else
-  const std::vector<const char *> RequiredExtensions = {"VK_KHR_win32_surface",
-                                                        "VK_KHR_surface"};
   const std::vector<const char *> RequestedLayers = {};
 #endif
 
