@@ -1,9 +1,16 @@
 #include "include\Application.hpp"
-#include "include\Platform.hpp"
 #include "include\input.hpp"
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <cstring>
+#include <fstream>
 #include <glm/glm.hpp>
 #include <print>
 #include <stb_image_write.h>
+#include <string>
 #include <string_view>
 
 namespace Utilities {
@@ -151,7 +158,6 @@ bool VulkanApp::Initialize() {
 }
 
 bool VulkanApp::Run() {
-  double timer = 0.0;
   if (m_RenderMethod == ERenderMethod::Compute) {
     DrawFrame();
     return true;
@@ -163,14 +169,17 @@ bool VulkanApp::Run() {
 
   window &active_window{*m_window};
 
+  auto previous_time{std::chrono::steady_clock::now()};
+
   while (m_Running) {
     /* Poll events */
 
     active_window.poll([this](const event &polled) { OnEvent(polled); });
-    const double deltaTime = Platform::GetAbsoluteTime() - timer;
-    timer = Platform::GetAbsoluteTime();
+    const auto current_time{std::chrono::steady_clock::now()};
+    const std::chrono::duration<float> delta_time{current_time - previous_time};
+    previous_time = current_time;
 
-    UpdateFrameData(static_cast<float>(deltaTime));
+    UpdateFrameData(delta_time.count());
     DrawFrame();
   }
 
@@ -655,11 +664,11 @@ bool VulkanApp::CreateSwapchain() {
 
   /* Clamp */
   m_SwapchainExtent.width =
-      APP_CLAMP(m_SwapchainExtent.width, minSwapchainImageExtent.width,
-                maxSwapchainImageExtent.width);
+      std::clamp(m_SwapchainExtent.width, minSwapchainImageExtent.width,
+                 maxSwapchainImageExtent.width);
   m_SwapchainExtent.height =
-      APP_CLAMP(m_SwapchainExtent.height, minSwapchainImageExtent.height,
-                maxSwapchainImageExtent.height);
+      std::clamp(m_SwapchainExtent.height, minSwapchainImageExtent.height,
+                 maxSwapchainImageExtent.height);
 
   const uint32_t minImageCount = m_SurfaceCapabilities.minImageCount;
   const uint32_t maxImageCount = m_SurfaceCapabilities.maxImageCount;
@@ -848,11 +857,13 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
 
   const std::array<uint32_t, 6ull> fullscreenQuadIndices{0, 1, 2, 2, 3, 0};
 
-  m_VertexBuffer.CPUData.Allocate(vertexBufferSize);
-  m_VertexBuffer.CPUData.Write(vertexBufferSize, fullscreenQuadVertices.data());
+  m_VertexBuffer.CPUData.resize(vertexBufferSize);
+  memcpy(m_VertexBuffer.CPUData.data(), fullscreenQuadVertices.data(),
+         vertexBufferSize);
 
-  m_IndexBuffer.CPUData.Allocate(indexBufferSize);
-  m_IndexBuffer.CPUData.Write(indexBufferSize, fullscreenQuadIndices.data());
+  m_IndexBuffer.CPUData.resize(indexBufferSize);
+  memcpy(m_IndexBuffer.CPUData.data(), fullscreenQuadIndices.data(),
+         indexBufferSize);
 
   /* Vertex Staging Buffer */
   {
@@ -893,7 +904,7 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     void *data;
     vkMapMemory(m_LogicalDevice, vertexStagingBufferMemory, 0, vertexBufferSize,
                 0, &data);
-    memcpy(data, m_VertexBuffer.CPUData.Data(), vertexBufferSize);
+    memcpy(data, m_VertexBuffer.CPUData.data(), vertexBufferSize);
     vkUnmapMemory(m_LogicalDevice, vertexStagingBufferMemory);
     /* Vertex Staging Buffer */
 
@@ -980,7 +991,7 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     void *data;
     vkMapMemory(m_LogicalDevice, stagingIndexBufferMemory, 0, vertexBufferSize,
                 0, &data);
-    memcpy(data, m_IndexBuffer.CPUData.Data(), indexBufferSize);
+    memcpy(data, m_IndexBuffer.CPUData.data(), indexBufferSize);
     vkUnmapMemory(m_LogicalDevice, stagingIndexBufferMemory);
 
     VkBufferCreateInfo indexBufferCreateInfo;
@@ -1706,7 +1717,7 @@ bool VulkanApp::RecordComputeCommandBuffers() {
 }
 
 void VulkanApp::UpdateFrameData(const float deltaTime) {
-  INTERNALSCOPE float zoomScale = 1.0f;
+  static float zoomScale = 1.0f;
   if (!m_window.has_value()) {
     return;
   }
@@ -1718,7 +1729,7 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
 
   const float aspectRatio =
       static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
-  INTERNALSCOPE UBO ubo = {
+  static UBO ubo = {
       .AspectRatio{aspectRatio},
       .CenterX{0.0f},
       .CenterY{-0.5f},

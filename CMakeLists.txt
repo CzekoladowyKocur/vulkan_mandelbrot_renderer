@@ -37,7 +37,6 @@ add_executable(vulkan_mandelbrot_renderer
 	src/input.cpp
 	src/LibraryBuild.cpp
 	src/Main.cpp
-	src/Platform.cpp
 	src/platform/win32/window_win32.cpp
 )
 
