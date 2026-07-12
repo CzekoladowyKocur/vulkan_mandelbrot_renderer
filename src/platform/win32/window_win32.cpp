@@ -1,6 +1,7 @@
 #include "include/window.hpp"
 
 #include <Windows.h>
+#include <array>
 
 #include "include/VulkanTypes.hpp"
 
@@ -35,6 +36,13 @@ struct window::detail final : win32_window_state {
                            .name{std::move(props.name)},
                            .maximized{props.maximized}} {}
 };
+
+std::span<const char *const> window::get_required_extensions() noexcept {
+  static constexpr std::array<const char *, 2u> extensions{
+      VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME};
+
+  return extensions;
+}
 
 std::expected<window, std::error_code>
 window::create(window_props &&props) noexcept {
