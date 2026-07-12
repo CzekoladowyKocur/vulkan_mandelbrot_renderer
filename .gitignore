@@ -5,6 +5,9 @@ desktop.ini
 # macOS
 .DS_Store
 
+# SPIR-V Shaders
+*.spv
+
 # Visual Studio: https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 ## Ignore Visual Studio temporary files, build results, and
