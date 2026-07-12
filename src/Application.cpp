@@ -1,7 +1,7 @@
 #include <glm/glm.hpp>
 #include <print>
 #include <string_view>
-
+#include <stb_image_write.h>
 #include "include\Application.h"
 #include "include\Input.h"
 #include "include\Platform.h"
@@ -16,7 +16,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugReportCallback(
 constexpr uint64_t MaxSwapchainTimeout = UINT64_MAX;
 /* These can be tweaked. In order to change the dimensions, adjust the
  * computePFN_vkDebugReportCallbackEXT shader code and recompile them. */
-constexpr uint32_t ComputeRenderWidth = 3200 * 1;
+constexpr uint32_t ComputeRenderWidth = 3200 * 2;
 constexpr uint32_t ComputeRenderHeight = 2400 * 2;
 constexpr std::size_t ComputeBufferSize =
     static_cast<std::size_t>(ComputeRenderWidth) * ComputeRenderHeight *
@@ -1779,11 +1779,6 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
   uboBufferDescriptorSetWrite.pNext = nullptr;
 }
 
-#pragma warning(push, 0)
-#include <lodepng.h>
-#pragma warning(pop)
-#include <iostream>
-
 void VulkanApp::DrawFrame() {
   struct Pixel {
     uint8_t r;
@@ -1822,11 +1817,12 @@ void VulkanApp::DrawFrame() {
     }
 
     vkUnmapMemory(m_LogicalDevice, m_ComputePipelineStorageBuffer.DeviceMemory);
-    const auto error = lodepng::encode(
-        "mandelbrot.png", image, Utilities::ComputeRenderWidth,
-        Utilities::ComputeRenderHeight, LodePNGColorType::LCT_RGBA, 8U);
-    if (error) {
-      std::println("encoder error {}: {}", error, lodepng_error_text(error));
+    const auto success =
+        stbi_write_png("mandelbrot.png", Utilities::ComputeRenderWidth,
+                       Utilities::ComputeRenderHeight, 4, image.data(),
+                       Utilities::ComputeRenderWidth * 4);
+    if (!success) {
+      std::println("encoder error: Failed to write PNG");
     } else {
       std::println("Sucessfully rendered image");
     }

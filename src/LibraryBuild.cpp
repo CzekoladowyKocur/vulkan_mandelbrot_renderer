@@ -1,13 +1,17 @@
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
+#elif defined(_MSC_VER)
+#pragma warning(push, 0)
 #endif
 
-/* Object file for library builds */
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-/* TODO: Add Imgui */
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
 #endif
