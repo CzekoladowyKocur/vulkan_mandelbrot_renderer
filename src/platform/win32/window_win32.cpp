@@ -4,6 +4,7 @@
 #include <array>
 
 #include "include/VulkanTypes.hpp"
+#include <vulkan/vulkan_win32.h>
 
 constexpr int g_callback_slot{0};
 

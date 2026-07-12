@@ -7,7 +7,6 @@
 #include <string>
 #include <system_error>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_win32.h>
 
 class vulkan_error_category final : public std::error_category {
 public:

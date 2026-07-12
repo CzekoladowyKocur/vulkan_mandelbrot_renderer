@@ -1,10 +1,8 @@
 #pragma once
-/* Win32 */
-#include <Windows.h>
-/* STD */
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <string>
