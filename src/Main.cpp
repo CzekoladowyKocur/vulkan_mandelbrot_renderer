@@ -9,7 +9,7 @@
 
 #include "include/Application.hpp"
 
-static int vulkan_app_main() {
+[[nodiscard]] static int vulkan_app_main() {
   const auto application{
       std::make_unique<VulkanApp>(VulkanApp::ERenderMethod::Graphics)};
 
