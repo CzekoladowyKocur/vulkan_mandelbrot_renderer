@@ -25,6 +25,14 @@
       "toolset": "ClangCL"
     },
     {
+      "name": "msvc-asan",
+      "displayName": "MSVC + AddressSanitizer",
+      "inherits": "msvc",
+      "cacheVariables": {
+        "ENABLE_ASAN": "ON"
+      }
+    },
+    {
       "name": "ninja",
       "displayName": "Ninja Generator",
       "generator": "Ninja",
@@ -56,6 +64,11 @@
       "name": "clang-release",
       "configurePreset": "clang",
       "configuration": "Release"
+    },
+    {
+      "name": "msvc-asan-debug",
+      "configurePreset": "msvc-asan",
+      "configuration": "Debug"
     },
     {
       "name": "ninja-debug",
