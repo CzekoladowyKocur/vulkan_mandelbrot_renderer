@@ -1,21 +1,69 @@
-# Vulkan-Mandelbrot-Set
-A minimal example of a Mandelbrot Set renderer made with vulkan and win32 API.
-## The Goal
-The goal of this project is to create a realtime mandelbrot set renderer with adjustable parameters and navigation, with
-option of offline rendering with use of compute shaders to an output PNG file.
-### Build 
-To build the project, navigate to the build directory and run the setup batch file. There is no need to compile shaders by hand as they are already provided in SPIRV format, but the GLSL source code can be found. Currently, only windows is supported.
-####
-In order to change the rendering method, navigate to Main.cpp and choose the corresponding enum (compute or graphics) in the application creation.
-#### Showcase
-![10kIters](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/blob/master/showcase/TenThousandIterations.png)
-![OfflineRendering](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/blob/master/showcase/ComputeMandelbrot.png)
-### Input:
-#### [W] - Move up
-#### [S] - Move down
-#### [A] - Move left
-#### [D] - Move right
-#### [Z] - Zoom In       
-#### [X] - Zoom Out
-#### [UP] - Increase iterations
-#### [DOWN] - Decrease iterations
+# Vulkan Mandelbrot Renderer
+
+A real-time Mandelbrot set renderer written in C++23 with the Vulkan API and Win32 with
+interactive navigation and offline rendering to PNG using compute shaders.
+
+![10kIters](showcase/TenThousandIterations.png)
+
+## Features
+
+- Real-time fractal rendering with a graphics pipeline
+- Offline rendering path using compute shaders, written out to PNG
+- Interactive pan, zoom and iteration control
+- Two compiler toolchains supported and enforced in CI: MSVC and clang-cl, both warning-clean with warnings-as-errors
+- Static analysis (clang-tidy) and formatting (clang-format) enforced via git hooks and CI
+- CMake presets for all supported toolchains, optional AddressSanitizer preset
+
+## Building
+
+Prerequisites (Windows):
+- Visual Studio 2026 with clang-cl
+- CMake 3.30+
+- Vulkan SDK 1.3+
+
+```
+cmake --preset msvc
+cmake --build --preset msvc-debug
+```
+
+Available configure presets: `msvc`, `clang` (clang-cl), `msvc-asan` (AddressSanitizer) and
+`ninja` (compile database for clang-tidy). Shaders are
+compiled to SPIR-V automatically as part of the build. Dependencies are
+fetched by CMake.
+
+## Running
+
+```
+build/msvc/Debug/vulkan_mandelbrot_renderer.exe
+```
+
+Run from the repository root so the relative `assets/` paths resolve. To switch between the graphics and compute
+rendering methods, change the corresponding enum in the application creation in `src/Main.cpp`.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| W / S | Move up / down |
+| A / D | Move left / right |
+| Z / X | Zoom in / out |
+| UP / DOWN | Increase / decrease iterations |
+
+## Development setup
+
+Git for Windows is required.
+
+```sh
+git config core.hooksPath hooks
+```
+
+clang-tidy needs a compile database. Generate it with the ninja preset from an
+**x64 Native Tools Command Prompt**:
+
+```
+cmake --preset ninja
+```
+
+## Offline compute rendering
+
+![OfflineRendering](showcase/ComputeMandelbrot.png)
