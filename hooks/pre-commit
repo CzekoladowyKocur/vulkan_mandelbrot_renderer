@@ -14,7 +14,7 @@ if [ $FORMAT_STATUS -ne 0 ]; then
 	exit $FORMAT_STATUS
 fi
 
-echo "$FILES" | xargs clang-tidy --quiet -- -std=c++23 -I.
+clang-tidy --quiet $FILES -- -std=c++23 -I.
 TIDY_STATUS=$?
 
 if [ $TIDY_STATUS -ne 0 ]; then
