@@ -1,11 +1,10 @@
 #include <Windows.h>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <print>
 #include <vulkan/vulkan.h>
-
-#include "include/Core.hpp"
 
 #include "include/Application.hpp"
 
