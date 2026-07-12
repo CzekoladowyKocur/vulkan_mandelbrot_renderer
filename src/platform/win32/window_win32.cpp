@@ -208,6 +208,11 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
 
   case WM_SIZE: {
     if (wParam == SIZE_MINIMIZED) {
+      if (state != nullptr) {
+        state->width = 0u;
+        state->height = 0u;
+      }
+
       dispatch(window_minimize_event{});
       return event_handled;
     }
