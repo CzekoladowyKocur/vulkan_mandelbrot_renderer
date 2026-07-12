@@ -84,10 +84,20 @@ std::expected<void, std::error_code> window::initialize() noexcept {
 
   const LONG_PTR dwNewUserData{reinterpret_cast<LONG_PTR>(
       static_cast<win32_window_state *>(m_detail.get()))};
-  ::SetWindowLongPtrA(m_detail->hwnd, GWLP_USERDATA, dwNewUserData);
+
+  ::SetLastError(0u);
+  if (::SetWindowLongPtrA(m_detail->hwnd, GWLP_USERDATA, dwNewUserData) == 0 &&
+      ::GetLastError() != 0u) {
+    return get_last_error();
+  }
 
   const LONG_PTR dwNewWndProc{reinterpret_cast<LONG_PTR>(&win32_wndproc)};
-  ::SetWindowLongPtrA(m_detail->hwnd, GWLP_WNDPROC, dwNewWndProc);
+
+  ::SetLastError(0u);
+  if (::SetWindowLongPtrA(m_detail->hwnd, GWLP_WNDPROC, dwNewWndProc) == 0 &&
+      ::GetLastError() != 0u) {
+    return get_last_error();
+  }
 
   const int nCmdShow{m_detail->maximized ? SW_SHOWMAXIMIZED : SW_SHOW};
   ::ShowWindow(m_detail->hwnd, nCmdShow);
