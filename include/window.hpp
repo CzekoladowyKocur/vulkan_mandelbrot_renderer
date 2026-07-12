@@ -16,6 +16,7 @@ struct window_props final {
   std::uint32_t width{};
   std::uint32_t height{};
   std::string name{};
+  bool maximized{};
 };
 
 class window final {
