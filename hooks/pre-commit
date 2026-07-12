@@ -1,0 +1,16 @@
+#!/bin/sh
+
+FILES=$(git diff --cached --name-only --diff-filter=ACMR -- 'src/*.cpp' 'src/*.h' 'include/*.cpp' 'include/*.h')
+
+[ -z "$FILES" ] && exit 0
+
+echo "$FILES" | xargs clang-format --dry-run --Werror
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+	echo "" >&2
+	echo "pre-commit: formatting check failed. Fix with:" >&2
+	echo "  clang-format -i $(echo $FILES | tr '\n' ' ')" >&2
+fi
+
+exit $STATUS
