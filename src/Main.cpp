@@ -35,9 +35,8 @@ static int vulkan_app_main() {
 }
 
 #undef APIENTRY
-int __stdcall WINAPI wWinMain(_In_ HINSTANCE hInstance,
-                              _In_opt_ HINSTANCE hPrevInstance,
-                              _In_ LPWSTR lpCmdLine, _In_ int nShowCmd) {
+int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
+                    _In_ LPWSTR lpCmdLine, _In_ int nShowCmd) {
   (void)hPrevInstance;
   (void)lpCmdLine;
 
