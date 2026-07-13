@@ -7,6 +7,8 @@ layout(location = 2) in float v_CenterX;
 layout(location = 3) in float v_CenterY;
 layout(location = 4) in float v_ZoomScale;
 layout(location = 5) in flat int v_IterationCount;
+layout(location = 6) in float v_PalettePeriod;
+layout(location = 7) in float v_PaletteOffset;
 layout(location = 0) out vec4 Color;
 
 /* https://iquilezles.org/articles/palettes/ */
@@ -43,6 +45,6 @@ void main()
 	}
 
 	const float smoothIteration = float(i) + 1.0 - log2(0.5 * log(dot(z, z)));
-	const float value = fract(smoothIteration / 32.0);
+	const float value = fract(smoothIteration / v_PalettePeriod + v_PaletteOffset);
 	Color = vec4(palette(value), 1.0);
 }

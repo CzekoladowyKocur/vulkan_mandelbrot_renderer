@@ -21,9 +21,9 @@ private:
     float zoom_scale{};
     std::int32_t iteration_count{};
 
-    float padding_x{};
-    float padding_y{};
-    float padding_z{};
+    float palette_period{32.0f};
+    float palette_offset{};
+    float padding{};
   };
 
   struct surface_resource final {
