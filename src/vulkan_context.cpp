@@ -75,6 +75,18 @@ std::expected<void, std::error_code> vulkan_context::create_instance(
   const std::vector<const char *> requested_layers{};
 #endif
 
+#ifdef __APPLE__
+  required_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#ifndef APP_DEBUG
+  required_extensions.push_back(
+      VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+#endif
+  constexpr VkInstanceCreateFlags instance_flags{
+      VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR};
+#else
+  constexpr VkInstanceCreateFlags instance_flags{};
+#endif
+
   std::uint32_t available_extension_count{};
   vkEnumerateInstanceExtensionProperties(nullptr, &available_extension_count,
                                          nullptr);
@@ -138,7 +150,7 @@ std::expected<void, std::error_code> vulkan_context::create_instance(
   const VkInstanceCreateInfo instance_create_info{
       .sType{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO},
       .pNext{nullptr},
-      .flags{},
+      .flags{instance_flags},
       .pApplicationInfo{&application_info},
       .enabledLayerCount{
           static_cast<std::uint32_t>(available_requested_layers.size())},
@@ -250,8 +262,27 @@ std::expected<void, std::error_code> vulkan_context::select_physical_device() {
 }
 
 std::expected<void, std::error_code> vulkan_context::create_device() {
-  const std::array<const char *, 1uz> required_device_extensions{
+  std::vector<const char *> required_device_extensions{
       VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+  std::uint32_t available_extension_count{};
+  vkEnumerateDeviceExtensionProperties(m_physical_device, nullptr,
+                                       &available_extension_count, nullptr);
+  std::vector<VkExtensionProperties> available_extensions(
+      available_extension_count);
+  vkEnumerateDeviceExtensionProperties(m_physical_device, nullptr,
+                                       &available_extension_count,
+                                       available_extensions.data());
+
+  constexpr const char *portability_subset_extension{
+      "VK_KHR_portability_subset"};
+  for (const VkExtensionProperties &available : available_extensions) {
+    if (std::strcmp(portability_subset_extension, available.extensionName) ==
+        0) {
+      required_device_extensions.push_back(portability_subset_extension);
+      break;
+    }
+  }
 
   constexpr float default_queue_priority{0.0f};
 
