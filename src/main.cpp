@@ -1,16 +1,38 @@
 #include <Windows.h>
+#include <shellapi.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <print>
+#include <string_view>
 #include <vulkan/vulkan.h>
 
 #include "include/Application.hpp"
 
-[[nodiscard]] static int vulkan_app_main() {
-  const auto application{
-      std::make_unique<VulkanApp>(VulkanApp::ERenderMethod::Graphics)};
+[[nodiscard]] static VulkanApp::ERenderMethod parse_render_method() noexcept {
+  int argument_count{0};
+  wchar_t **const arguments{
+      ::CommandLineToArgvW(::GetCommandLineW(), &argument_count)};
+  if (arguments == nullptr) {
+    return VulkanApp::ERenderMethod::Graphics;
+  }
+
+  auto render_method{VulkanApp::ERenderMethod::Graphics};
+  for (int i{1}; i < argument_count; ++i) {
+    if (std::wstring_view{arguments[i]} == L"--compute") {
+      render_method = VulkanApp::ERenderMethod::Compute;
+    }
+  }
+
+  ::LocalFree(static_cast<HLOCAL>(static_cast<void *>(arguments)));
+  return render_method;
+}
+
+[[nodiscard]] static int
+vulkan_app_main(const VulkanApp::ERenderMethod render_method) {
+  const auto application{std::make_unique<VulkanApp>(render_method)};
 
   if (!application->Initialize()) {
     std::println("Failed to initialize application");
@@ -63,7 +85,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 
   ::ShowWindow(::GetConsoleWindow(), nShowCmd != 0 ? SW_SHOW : SW_HIDE);
 
-  const int result{vulkan_app_main()};
+  const int result{vulkan_app_main(parse_render_method())};
 
   ::UnregisterClassA(g_window_class_name, hInstance);
   return result;
