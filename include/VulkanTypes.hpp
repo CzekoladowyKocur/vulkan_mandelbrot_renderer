@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <expected>
 #include <print>
@@ -140,6 +141,25 @@ public:
 make_vulkan_error(const VkResult result) noexcept {
   return std::unexpected{
       std::error_code{static_cast<int>(result), vulkan_category()}};
+}
+
+[[nodiscard]] inline std::uint32_t retrieve_memory_type_index(
+    const VkPhysicalDevice physical_device,
+    const std::uint32_t memory_type_bits,
+    const VkMemoryPropertyFlags property_flags) noexcept {
+  VkPhysicalDeviceMemoryProperties memory_properties{};
+  vkGetPhysicalDeviceMemoryProperties(physical_device, &memory_properties);
+
+  for (std::uint32_t i{0u}; i < memory_properties.memoryTypeCount; ++i) {
+    if ((memory_type_bits & (1u << i)) &&
+        (memory_properties.memoryTypes[i].propertyFlags & property_flags) ==
+            property_flags) {
+      return i;
+    }
+  }
+
+  assert(false);
+  return 0;
 }
 
 #ifdef APP_DEBUG

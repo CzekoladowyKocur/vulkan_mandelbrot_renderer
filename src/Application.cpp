@@ -846,7 +846,9 @@ bool VulkanApp::LoadAssets() {
     return false;
   }
 
-  auto palette{texture_2d::create({.image{*palette_image}})};
+  auto palette{texture_2d::create({.image{*palette_image},
+                                   .device{m_LogicalDevice},
+                                   .physical_device{m_PhysicalDevice}})};
   if (!palette) {
     return false;
   }
@@ -901,8 +903,9 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     VkMemoryAllocateInfo allocateInfo;
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = RetrieveMemoryTypeIndex(
-        memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
+        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     allocateInfo.pNext = nullptr;
 
     vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
@@ -937,8 +940,9 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
 
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = RetrieveMemoryTypeIndex(
-        memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
+        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     allocateInfo.pNext = nullptr;
 
     vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
@@ -988,8 +992,9 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     VkMemoryAllocateInfo allocateInfo;
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = RetrieveMemoryTypeIndex(
-        memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
+        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     allocateInfo.pNext = nullptr;
 
     VK_CHECK(vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
@@ -1023,8 +1028,9 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
 
     allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = RetrieveMemoryTypeIndex(
-        memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
+        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     allocateInfo.pNext = nullptr;
 
     VK_CHECK(vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
@@ -1331,10 +1337,10 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   uboBufferMemoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   uboBufferMemoryAllocationInfo.allocationSize =
       uboBufferMemoryRequirements.size;
-  uboBufferMemoryAllocationInfo.memoryTypeIndex =
-      RetrieveMemoryTypeIndex(uboBufferMemoryRequirements.memoryTypeBits,
-                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+  uboBufferMemoryAllocationInfo.memoryTypeIndex = retrieve_memory_type_index(
+      m_PhysicalDevice, uboBufferMemoryRequirements.memoryTypeBits,
+      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
   uboBufferMemoryAllocationInfo.pNext = nullptr;
 
   VK_CHECK(vkAllocateMemory(m_LogicalDevice, &uboBufferMemoryAllocationInfo,
@@ -1449,10 +1455,10 @@ bool VulkanApp::CreateComputeBasedPipeline() {
       VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   storageBufferMemoryAllocateInfo.allocationSize =
       storageBufferMemoryRequirements.size;
-  storageBufferMemoryAllocateInfo.memoryTypeIndex =
-      RetrieveMemoryTypeIndex(storageBufferMemoryRequirements.memoryTypeBits,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  storageBufferMemoryAllocateInfo.memoryTypeIndex = retrieve_memory_type_index(
+      m_PhysicalDevice, storageBufferMemoryRequirements.memoryTypeBits,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   storageBufferMemoryAllocateInfo.pNext = nullptr;
 
   VK_CHECK(vkAllocateMemory(m_LogicalDevice, &storageBufferMemoryAllocateInfo,
@@ -2270,23 +2276,6 @@ VulkanApp::CreateShaderModule(const std::string_view filepath) const {
   }
 
   return module;
-}
-
-uint32_t
-VulkanApp::RetrieveMemoryTypeIndex(VkMemoryPropertyFlags memoryPropertyFlags,
-                                   uint32_t memoryTypeBits) const {
-  vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice,
-                                      &m_PhysicalDeviceMemoryProperties);
-
-  for (uint32_t i = 0; i < m_PhysicalDeviceMemoryProperties.memoryTypeCount;
-       ++i)
-    if ((memoryPropertyFlags & (1 << i)) &&
-        (m_PhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags &
-         memoryTypeBits) == memoryTypeBits)
-      return i;
-
-  assert(false);
-  return 0;
 }
 
 namespace Utilities {

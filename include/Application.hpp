@@ -51,8 +51,6 @@ private:
   void CleanupSwapchain();
   /* Pipeline */
   VkShaderModule CreateShaderModule(const std::string_view filepath) const;
-  uint32_t RetrieveMemoryTypeIndex(VkMemoryPropertyFlags memoryPropertyFlags,
-                                   uint32_t memoryTypeBits) const;
 
   VkCommandBuffer BeginRecordingSingleTimeUseCommands(const bool compute);
   void EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer,
