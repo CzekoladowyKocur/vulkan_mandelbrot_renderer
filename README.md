@@ -3,7 +3,6 @@
 A real-time Mandelbrot set renderer written in C++23 with the Vulkan API and Win32 with
 interactive navigation and offline rendering to PNG using compute shaders.
 
-![10kIters](showcase/TenThousandIterations.png)
 
 ## Features
 
