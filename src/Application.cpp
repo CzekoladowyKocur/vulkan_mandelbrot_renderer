@@ -67,7 +67,7 @@ VulkanApp::VulkanApp(const ERenderMethod renderMethod)
       m_ComputePipelineLayout(VK_NULL_HANDLE),
       m_ComputePipelineCommandBuffer(VK_NULL_HANDLE), m_ImageIndex(0),
       m_FrameIndex(0), m_InFlightFences(), m_ImagesInFlight(),
-      m_ColorPaletteImage(nullptr)
+      m_ColorPaletteImage(std::nullopt)
 #ifdef APP_DEBUG
       ,
       m_DebugReportCallback(VK_NULL_HANDLE)
@@ -188,7 +188,7 @@ bool VulkanApp::Run() {
 
 bool VulkanApp::Shutdown() {
   VK_CHECK(vkDeviceWaitIdle(m_LogicalDevice));
-  delete m_ColorPaletteImage;
+  m_ColorPaletteImage.reset();
   /* Device level */
   VK_CHECK(vkDeviceWaitIdle(m_LogicalDevice));
 
@@ -841,7 +841,18 @@ bool VulkanApp::CreateSwapchain() {
 }
 
 bool VulkanApp::LoadAssets() {
-  m_ColorPaletteImage = new Image2D("assets/images/violetPalette.bmp");
+  const auto palette_data{
+      image_data::load_from_file("assets/images/violetPalette.bmp")};
+  if (!palette_data) {
+    return false;
+  }
+
+  auto palette{image_2d::create({.data{*palette_data}})};
+  if (!palette) {
+    return false;
+  }
+
+  m_ColorPaletteImage.emplace(std::move(*palette));
 
   return true;
 }
@@ -1237,6 +1248,10 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   pipelineLayoutInfo.pPushConstantRanges = nullptr;
   pipelineLayoutInfo.flags = 0;
   pipelineLayoutInfo.pNext = nullptr;
+
+  if (!m_ColorPaletteImage.has_value()) {
+    return false;
+  }
 
   VkDescriptorImageInfo imageInfo;
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
