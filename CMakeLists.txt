@@ -41,8 +41,13 @@ add_executable(vulkan_mandelbrot_renderer
 	src/vulkan_context.cpp
 	src/LibraryBuild.cpp
 	src/main.cpp
-	src/platform/win32/window_win32.cpp
 )
+
+if(WIN32)
+	target_sources(vulkan_mandelbrot_renderer PRIVATE
+		src/platform/win32/window_win32.cpp
+	)
+endif()
 
 target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -54,8 +59,11 @@ target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
 	Vulkan::Vulkan
 	glm::glm
 	stb
-	Shell32
 )
+
+if(WIN32)
+	target_link_libraries(vulkan_mandelbrot_renderer PRIVATE Shell32)
+endif()
 
 target_compile_definitions(vulkan_mandelbrot_renderer PRIVATE
 	$<$<CONFIG:Debug>:APP_DEBUG>
@@ -78,7 +86,7 @@ if(MSVC)
 	)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(vulkan_mandelbrot_renderer PRIVATE
 		/clang:-Werror
 		/clang:-Wall

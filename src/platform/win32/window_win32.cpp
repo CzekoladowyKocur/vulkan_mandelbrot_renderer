@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <array>
+#include <utility>
 
 #include "include/VulkanTypes.hpp"
 #include <vulkan/vulkan_win32.h>
@@ -178,6 +179,117 @@ get_last_error() noexcept {
                                          std::system_category()}};
 }
 
+[[nodiscard]] static key_code
+key_code_from_virtual_key(const WPARAM virtual_key) noexcept {
+  if (virtual_key >= 'A' && virtual_key <= 'Z') {
+    return static_cast<key_code>(std::to_underlying(key_code::a) +
+                                 (virtual_key - 'A'));
+  }
+
+  if (virtual_key >= VK_NUMPAD0 && virtual_key <= VK_NUMPAD9) {
+    return static_cast<key_code>(std::to_underlying(key_code::numpad0) +
+                                 (virtual_key - VK_NUMPAD0));
+  }
+
+  if (virtual_key >= VK_F1 && virtual_key <= VK_F24) {
+    return static_cast<key_code>(std::to_underlying(key_code::f1) +
+                                 (virtual_key - VK_F1));
+  }
+
+  switch (virtual_key) {
+  case VK_BACK:
+    return key_code::backspace;
+  case VK_TAB:
+    return key_code::tab;
+  case VK_RETURN:
+    return key_code::enter;
+  case VK_ESCAPE:
+    return key_code::escape;
+  case VK_SPACE:
+    return key_code::space;
+  case VK_SHIFT:
+    return key_code::shift;
+  case VK_CONTROL:
+    return key_code::control;
+  case VK_MENU:
+    return key_code::alt;
+  case VK_LSHIFT:
+    return key_code::left_shift;
+  case VK_RSHIFT:
+    return key_code::right_shift;
+  case VK_LCONTROL:
+    return key_code::left_control;
+  case VK_RCONTROL:
+    return key_code::right_control;
+  case VK_LMENU:
+    return key_code::left_alt;
+  case VK_RMENU:
+    return key_code::right_alt;
+  case VK_LWIN:
+    return key_code::left_super;
+  case VK_RWIN:
+    return key_code::right_super;
+  case VK_APPS:
+    return key_code::menu;
+  case VK_CAPITAL:
+    return key_code::caps_lock;
+  case VK_PAUSE:
+    return key_code::pause;
+  case VK_SNAPSHOT:
+    return key_code::print_screen;
+  case VK_NUMLOCK:
+    return key_code::num_lock;
+  case VK_SCROLL:
+    return key_code::scroll_lock;
+  case VK_PRIOR:
+    return key_code::page_up;
+  case VK_NEXT:
+    return key_code::page_down;
+  case VK_END:
+    return key_code::end;
+  case VK_HOME:
+    return key_code::home;
+  case VK_INSERT:
+    return key_code::insert;
+  case VK_DELETE:
+    return key_code::del;
+  case VK_LEFT:
+    return key_code::left;
+  case VK_UP:
+    return key_code::up;
+  case VK_RIGHT:
+    return key_code::right;
+  case VK_DOWN:
+    return key_code::down;
+  case VK_MULTIPLY:
+    return key_code::multiply;
+  case VK_ADD:
+    return key_code::add;
+  case VK_SUBTRACT:
+    return key_code::subtract;
+  case VK_DECIMAL:
+    return key_code::decimal;
+  case VK_DIVIDE:
+    return key_code::divide;
+  case VK_OEM_1:
+    return key_code::semicolon;
+  case VK_OEM_PLUS:
+    return key_code::plus;
+  case VK_OEM_COMMA:
+    return key_code::comma;
+  case VK_OEM_MINUS:
+    return key_code::minus;
+  case VK_OEM_PERIOD:
+    return key_code::period;
+  case VK_OEM_2:
+    return key_code::slash;
+  case VK_OEM_3:
+    return key_code::grave;
+  default:
+    return key_code::none;
+  }
+}
+
 static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
                                       const WPARAM wParam,
                                       const LPARAM lParam) noexcept {
@@ -241,13 +353,13 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
 
   case WM_KEYDOWN:
   case WM_SYSKEYDOWN: {
-    dispatch(key_pressed_event{.code{static_cast<key_code>(wParam)}});
+    dispatch(key_pressed_event{.code{key_code_from_virtual_key(wParam)}});
     return event_handled;
   }
 
   case WM_KEYUP:
   case WM_SYSKEYUP: {
-    dispatch(key_released_event{.code{static_cast<key_code>(wParam)}});
+    dispatch(key_released_event{.code{key_code_from_virtual_key(wParam)}});
     return event_handled;
   }
 
