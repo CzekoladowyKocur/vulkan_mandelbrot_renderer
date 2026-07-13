@@ -11,7 +11,9 @@
 using VkInstance = struct VkInstance_T *;
 using VkSurfaceKHR = struct VkSurfaceKHR_T *;
 
+#ifdef _WIN32
 inline constexpr const char *g_window_class_name{"VulkanMandelbrotRenderer"};
+#endif
 
 struct window_props final {
   std::uint32_t width{};
