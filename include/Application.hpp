@@ -186,7 +186,7 @@ private:
   std::vector<VkFence> m_ImagesInFlight;
 
   /* Assets */
-  Image2D *m_ColorPaletteImage;
+  std::optional<image_2d> m_ColorPaletteImage;
 
   /* Debug */
 #ifdef APP_DEBUG
@@ -196,5 +196,5 @@ private:
   static VulkanApp *s_ApplicationInstance;
 
 private:
-  friend class Image2D;
+  friend class image_2d;
 };
