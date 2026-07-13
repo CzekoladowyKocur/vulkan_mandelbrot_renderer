@@ -43,7 +43,8 @@ private:
   [[nodiscard]] std::expected<void, std::error_code>
   create_instance(const std::span<const char *const> instance_extensions);
   [[nodiscard]] std::expected<void, std::error_code> select_physical_device();
-  [[nodiscard]] std::expected<void, std::error_code> create_device();
+  [[nodiscard]] std::expected<void, std::error_code>
+  create_device(const bool presentation_required);
   [[nodiscard]] std::expected<void, std::error_code> create_command_pools();
 
   void destroy() noexcept;
