@@ -9,7 +9,16 @@ layout(location = 4) in float v_ZoomScale;
 layout(location = 5) in flat int v_IterationCount;
 layout(location = 0) out vec4 Color;
 
-layout(set = 1, binding = 0) uniform sampler2D u_ColorPalette;
+/* https://iquilezles.org/articles/palettes/ */
+vec3 palette(float t)
+{
+	const vec3 a = vec3(0.5, 0.5, 0.5);
+	const vec3 b = vec3(0.5, 0.5, 0.5);
+	const vec3 c = vec3(1.0, 1.0, 1.0);
+	const vec3 d = vec3(0.263, 0.416, 0.557);
+
+	return a + b * cos(6.28318 * (c * t + d));
+}
 
 void main()
 {
@@ -34,6 +43,6 @@ void main()
 	}
 
 	const float smoothIteration = float(i) + 1.0 - log2(0.5 * log(dot(z, z)));
-	const float value = smoothIteration / float(v_IterationCount);
-	Color = texture(u_ColorPalette, vec2(value, value));
+	const float value = fract(smoothIteration / 32.0);
+	Color = vec4(palette(value), 1.0);
 }
