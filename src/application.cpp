@@ -995,8 +995,8 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
       static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
   static UBO ubo = {
       .AspectRatio{aspectRatio},
-      .CenterX{0.0f},
-      .CenterY{-0.5f},
+      .CenterX{0.5f},
+      .CenterY{0.0f},
       .ZoomScale{zoomScale},
       .IterationCount{800},
       .padding_x{},
@@ -1019,16 +1019,16 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
     zoomScale -= zoomScale * zoomSpeed * deltaTime;
 
   if (m_input.is_key_pressed(key_code::w))
-    ubo.CenterX -= moveSpeed * deltaTime * zoomScale;
+    ubo.CenterY += moveSpeed * deltaTime * zoomScale;
 
   if (m_input.is_key_pressed(key_code::s))
-    ubo.CenterX += moveSpeed * deltaTime * zoomScale;
-
-  if (m_input.is_key_pressed(key_code::a))
     ubo.CenterY -= moveSpeed * deltaTime * zoomScale;
 
+  if (m_input.is_key_pressed(key_code::a))
+    ubo.CenterX += moveSpeed * deltaTime * zoomScale;
+
   if (m_input.is_key_pressed(key_code::d))
-    ubo.CenterY += moveSpeed * deltaTime * zoomScale;
+    ubo.CenterX -= moveSpeed * deltaTime * zoomScale;
 
   if (m_input.is_key_pressed(key_code::up))
     ubo.IterationCount += 1;
