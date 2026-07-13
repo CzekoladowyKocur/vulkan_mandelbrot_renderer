@@ -37,8 +37,8 @@ fetched by CMake.
 build/msvc/Debug/vulkan_mandelbrot_renderer.exe
 ```
 
-Run from the repository root so the relative `assets/` paths resolve. To switch between the graphics and compute
-rendering methods, change the corresponding enum in the application creation in `src/Main.cpp`.
+Run from the repository root so the relative `assets/` paths resolve. Pass `--compute` to render
+offline to `mandelbrot.png` instead of opening the interactive window.
 
 ### Controls
 
@@ -48,6 +48,9 @@ rendering methods, change the corresponding enum in the application creation in 
 | A / D | Move left / right |
 | Z / X | Zoom in / out |
 | UP / DOWN | Increase / decrease iterations |
+| C / V | Tighten / widen color bands |
+| LEFT / RIGHT | Shift the color palette |
+| SHIFT | Move faster |
 
 ## Development setup
 
