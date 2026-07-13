@@ -1031,6 +1031,28 @@ realtime_mandelbrot_application::update_frame_data(const float delta_time,
     std::println("decreased iteration count to: {}", ubo.iteration_count);
   }
 
+  constexpr float palette_period_speed{16.0f};
+  constexpr float palette_offset_speed{0.25f};
+  constexpr float min_palette_period{2.0f};
+
+  if (m_input.is_key_pressed(key_code::c)) {
+    ubo.palette_period =
+        std::max(min_palette_period,
+                 ubo.palette_period - palette_period_speed * delta_time);
+  }
+
+  if (m_input.is_key_pressed(key_code::v)) {
+    ubo.palette_period += palette_period_speed * delta_time;
+  }
+
+  if (m_input.is_key_pressed(key_code::left)) {
+    ubo.palette_offset -= palette_offset_speed * delta_time;
+  }
+
+  if (m_input.is_key_pressed(key_code::right)) {
+    ubo.palette_offset += palette_offset_speed * delta_time;
+  }
+
   /* Cap the zoom scale to avoid black border as we are rendering a quad */
   zoom_scale = zoom_scale > 1.0f * aspect_ratio ? 1.0f * aspect_ratio
                                                 : std::fabs(zoom_scale);
@@ -1231,9 +1253,9 @@ std::expected<void, std::error_code> realtime_mandelbrot_application::run() {
       .center_y{0.0f},
       .zoom_scale{zoom_scale},
       .iteration_count{800},
-      .padding_x{},
-      .padding_y{},
-      .padding_z{}};
+      .palette_period{32.0f},
+      .palette_offset{},
+      .padding{}};
 
   if (const auto written{ubo_buffer.write(std::as_bytes(std::span{&ubo, 1}))};
       !written) {
