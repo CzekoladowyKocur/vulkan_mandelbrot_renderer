@@ -162,6 +162,111 @@ make_vulkan_error(const VkResult result) noexcept {
   return 0;
 }
 
+inline void insert_image_memory_barrier(
+    const VkCommandBuffer command_buffer, const VkImage image,
+    const VkAccessFlags src_access_mask, const VkAccessFlags dst_access_mask,
+    const VkImageLayout old_layout, const VkImageLayout new_layout,
+    const VkPipelineStageFlags src_stage_mask,
+    const VkPipelineStageFlags dst_stage_mask,
+    const VkImageSubresourceRange &subresource_range) noexcept {
+  const VkImageMemoryBarrier image_memory_barrier{
+      .sType{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER},
+      .pNext{nullptr},
+      .srcAccessMask{src_access_mask},
+      .dstAccessMask{dst_access_mask},
+      .oldLayout{old_layout},
+      .newLayout{new_layout},
+      .srcQueueFamilyIndex{VK_QUEUE_FAMILY_IGNORED},
+      .dstQueueFamilyIndex{VK_QUEUE_FAMILY_IGNORED},
+      .image{image},
+      .subresourceRange{subresource_range}};
+
+  vkCmdPipelineBarrier(command_buffer, src_stage_mask, dst_stage_mask, 0, 0,
+                       nullptr, 0, nullptr, 1, &image_memory_barrier);
+}
+
+[[nodiscard]] inline VkAccessFlags
+source_access_mask_for_layout(const VkImageLayout layout) noexcept {
+  switch (layout) {
+  case VK_IMAGE_LAYOUT_UNDEFINED: {
+    return 0;
+  }
+  case VK_IMAGE_LAYOUT_PREINITIALIZED: {
+    return VK_ACCESS_HOST_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_READ_BIT;
+  }
+  case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: {
+    return VK_ACCESS_SHADER_READ_BIT;
+  }
+  default: {
+    assert(false);
+    return 0;
+  }
+  }
+}
+
+[[nodiscard]] inline VkAccessFlags
+destination_access_mask_for_layout(const VkImageLayout layout) noexcept {
+  switch (layout) {
+  case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_READ_BIT;
+  }
+  case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: {
+    return VK_ACCESS_SHADER_READ_BIT;
+  }
+  default: {
+    assert(false);
+    return 0;
+  }
+  }
+}
+
+inline void
+set_image_layout(const VkCommandBuffer command_buffer, const VkImage image,
+                 const VkImageLayout old_layout, const VkImageLayout new_layout,
+                 const VkPipelineStageFlags src_stage_mask,
+                 const VkPipelineStageFlags dst_stage_mask) noexcept {
+  constexpr VkImageSubresourceRange subresource_range{
+      .aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
+      .baseMipLevel{},
+      .levelCount{1},
+      .baseArrayLayer{},
+      .layerCount{1}};
+
+  VkAccessFlags src_access_mask{source_access_mask_for_layout(old_layout)};
+  const VkAccessFlags dst_access_mask{
+      destination_access_mask_for_layout(new_layout)};
+
+  if (new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
+      src_access_mask == 0) {
+    src_access_mask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+  }
+
+  insert_image_memory_barrier(
+      command_buffer, image, src_access_mask, dst_access_mask, old_layout,
+      new_layout, src_stage_mask, dst_stage_mask, subresource_range);
+}
+
 #ifdef APP_DEBUG
 #define VK_CHECK(x)                                                            \
   do {                                                                         \

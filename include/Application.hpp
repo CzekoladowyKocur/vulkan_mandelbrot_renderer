@@ -56,21 +56,6 @@ private:
   void EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer,
                                          const bool compute);
 
-  void InsertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage image,
-                                VkAccessFlags srcAccessMask,
-                                VkAccessFlags dstAccessMask,
-                                VkImageLayout oldImageLayout,
-                                VkImageLayout newImageLayout,
-                                VkPipelineStageFlags srcStageMask,
-                                VkPipelineStageFlags dstStageMask,
-                                VkImageSubresourceRange subresourceRange);
-
-  void SetImageLayout(VkCommandBuffer cmdbuffer, VkImage image,
-                      VkImageLayout oldImageLayout,
-                      VkImageLayout newImageLayout,
-                      VkPipelineStageFlags srcStageMask,
-                      VkPipelineStageFlags dstStageMask);
-
 private:
   struct UBO {
     float AspectRatio;
