@@ -162,6 +162,110 @@ make_vulkan_error(const VkResult result) noexcept {
   return 0;
 }
 
+struct single_time_command_context final {
+  VkDevice device{VK_NULL_HANDLE};
+  VkCommandPool command_pool{VK_NULL_HANDLE};
+  VkQueue queue{VK_NULL_HANDLE};
+};
+
+[[nodiscard]] inline std::expected<VkCommandBuffer, std::error_code>
+begin_single_time_commands(
+    const single_time_command_context &context) noexcept {
+  const VkCommandBufferAllocateInfo allocate_info{
+      .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO},
+      .pNext{nullptr},
+      .commandPool{context.command_pool},
+      .level{VK_COMMAND_BUFFER_LEVEL_PRIMARY},
+      .commandBufferCount{1}};
+
+  VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+  if (const VkResult result{vkAllocateCommandBuffers(
+          context.device, &allocate_info, &command_buffer)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  const VkCommandBufferBeginInfo begin_info{
+      .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO},
+      .pNext{nullptr},
+      .flags{VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT},
+      .pInheritanceInfo{nullptr}};
+
+  if (const VkResult result{vkBeginCommandBuffer(command_buffer, &begin_info)};
+      result != VK_SUCCESS) {
+    vkFreeCommandBuffers(context.device, context.command_pool, 1,
+                         &command_buffer);
+    return make_vulkan_error(result);
+  }
+
+  return command_buffer;
+}
+
+[[nodiscard]] inline std::expected<void, std::error_code>
+end_single_time_commands(const single_time_command_context &context,
+                         const VkCommandBuffer command_buffer) noexcept {
+  struct submit_resources final {
+    const single_time_command_context &context;
+    VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+    VkFence fence{VK_NULL_HANDLE};
+
+    submit_resources(const submit_resources &) = delete;
+    submit_resources &operator=(const submit_resources &) = delete;
+    submit_resources(submit_resources &&) = delete;
+    submit_resources &operator=(submit_resources &&) = delete;
+
+    submit_resources(const single_time_command_context &in_context,
+                     const VkCommandBuffer in_command_buffer) noexcept
+        : context{in_context}, command_buffer{in_command_buffer} {}
+
+    ~submit_resources() {
+      vkDestroyFence(context.device, fence, nullptr);
+      vkFreeCommandBuffers(context.device, context.command_pool, 1,
+                           &command_buffer);
+    }
+  };
+
+  submit_resources submit{context, command_buffer};
+
+  if (const VkResult result{vkEndCommandBuffer(command_buffer)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  const VkFenceCreateInfo fence_create_info{
+      .sType{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO}, .pNext{nullptr}, .flags{}};
+
+  if (const VkResult result{vkCreateFence(context.device, &fence_create_info,
+                                          nullptr, &submit.fence)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  const VkSubmitInfo submit_info{.sType{VK_STRUCTURE_TYPE_SUBMIT_INFO},
+                                 .pNext{nullptr},
+                                 .waitSemaphoreCount{},
+                                 .pWaitSemaphores{nullptr},
+                                 .pWaitDstStageMask{nullptr},
+                                 .commandBufferCount{1},
+                                 .pCommandBuffers{&command_buffer},
+                                 .signalSemaphoreCount{},
+                                 .pSignalSemaphores{nullptr}};
+
+  if (const VkResult result{
+          vkQueueSubmit(context.queue, 1, &submit_info, submit.fence)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  if (const VkResult result{vkWaitForFences(context.device, 1, &submit.fence,
+                                            VK_FALSE, UINT64_MAX)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  return {};
+}
+
 inline void insert_image_memory_barrier(
     const VkCommandBuffer command_buffer, const VkImage image,
     const VkAccessFlags src_access_mask, const VkAccessFlags dst_access_mask,
