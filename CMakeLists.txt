@@ -45,7 +45,16 @@ add_executable(vulkan_mandelbrot_renderer
 
 if(WIN32)
 	target_sources(vulkan_mandelbrot_renderer PRIVATE
+		src/platform/win32/entry_win32.cpp
 		src/platform/win32/window_win32.cpp
+	)
+elseif(APPLE)
+	enable_language(OBJCXX)
+	set(CMAKE_OBJCXX_STANDARD 23)
+	set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+
+	target_sources(vulkan_mandelbrot_renderer PRIVATE
+		src/platform/macos/window_macos.mm
 	)
 endif()
 
@@ -63,6 +72,11 @@ target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
 
 if(WIN32)
 	target_link_libraries(vulkan_mandelbrot_renderer PRIVATE Shell32)
+elseif(APPLE)
+	target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
+		"-framework Cocoa"
+		"-framework QuartzCore"
+	)
 endif()
 
 target_compile_definitions(vulkan_mandelbrot_renderer PRIVATE
@@ -110,6 +124,30 @@ if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		/clang:-Wno-braced-scalar-init
 		/clang:-Wno-missing-designated-field-initializers
 		/clang:-std=c++23
+	)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	target_compile_options(vulkan_mandelbrot_renderer PRIVATE
+		-Werror
+		-Wall
+		-Wextra
+		-Wshadow
+		-Wconversion
+		-Wimplicit-fallthrough
+		-Wabstract-vbase-init
+		-Wctor-dtor-privacy
+		-Wdelete-non-virtual-dtor
+		-Wtautological-compare
+		-Wuninitialized
+		-Wloop-analysis
+		-Wrange-loop-construct
+		-Wthread-safety
+		-Wno-c++98-compat
+		-Wno-c++98-compat-pedantic
+		-Wno-old-style-cast
+		-Wno-newline-eof
+		-Wno-error=delete-incomplete
+		-Wno-braced-scalar-init
+		-Wno-missing-designated-field-initializers
 	)
 elseif(MSVC)
 	target_compile_options(vulkan_mandelbrot_renderer PRIVATE

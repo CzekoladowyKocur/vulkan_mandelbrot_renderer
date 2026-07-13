@@ -33,6 +33,20 @@
       }
     },
     {
+      "name": "macos",
+      "displayName": "macOS (Ninja, AppleClang)",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
       "name": "ninja",
       "displayName": "Ninja Generator",
       "generator": "Ninja",
@@ -74,6 +88,16 @@
       "name": "ninja-debug",
       "configurePreset": "ninja",
       "configuration": "Debug"
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos",
+      "configuration": "Debug"
+    },
+    {
+      "name": "macos-release",
+      "configurePreset": "macos",
+      "configuration": "Release"
     }
   ]
 }
