@@ -176,7 +176,7 @@ begin_single_time_commands(
       .pNext{nullptr},
       .commandPool{context.command_pool},
       .level{VK_COMMAND_BUFFER_LEVEL_PRIMARY},
-      .commandBufferCount{1}};
+      .commandBufferCount{1u}};
 
   VkCommandBuffer command_buffer{VK_NULL_HANDLE};
   if (const VkResult result{vkAllocateCommandBuffers(
@@ -246,7 +246,7 @@ end_single_time_commands(const single_time_command_context &context,
                                  .waitSemaphoreCount{},
                                  .pWaitSemaphores{nullptr},
                                  .pWaitDstStageMask{nullptr},
-                                 .commandBufferCount{1},
+                                 .commandBufferCount{1u},
                                  .pCommandBuffers{&command_buffer},
                                  .signalSemaphoreCount{},
                                  .pSignalSemaphores{nullptr}};
@@ -366,9 +366,9 @@ inline void set_image_layout(set_image_layout_props &&props) noexcept {
   constexpr VkImageSubresourceRange subresource_range{
       .aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
       .baseMipLevel{},
-      .levelCount{1},
+      .levelCount{1u},
       .baseArrayLayer{},
-      .layerCount{1}};
+      .layerCount{1u}};
 
   VkAccessFlags src_access_mask{
       source_access_mask_for_layout(props.old_layout)};

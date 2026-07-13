@@ -73,8 +73,8 @@ texture_2d::initialize(const image_2d &image,
       .imageType{VK_IMAGE_TYPE_2D},
       .format{format},
       .extent{.width{m_width}, .height{m_height}, .depth{1u}},
-      .mipLevels{1},
-      .arrayLayers{1},
+      .mipLevels{1u},
+      .arrayLayers{1u},
       .samples{VK_SAMPLE_COUNT_1_BIT},
       .tiling{VK_IMAGE_TILING_OPTIMAL},
       .usage{imageUsageFlags},
@@ -178,9 +178,9 @@ texture_2d::initialize(const image_2d &image,
       .image{m_ImageHandle},
       .subresourceRange{.aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
                         .baseMipLevel{},
-                        .levelCount{1},
+                        .levelCount{1u},
                         .baseArrayLayer{},
-                        .layerCount{1}}};
+                        .layerCount{1u}}};
 
   const VkBufferImageCopy imageBufferCopyRegion{
       .bufferOffset{},
@@ -189,9 +189,9 @@ texture_2d::initialize(const image_2d &image,
       .imageSubresource{.aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
                         .mipLevel{},
                         .baseArrayLayer{},
-                        .layerCount{1}},
+                        .layerCount{1u}},
       .imageOffset{.x{}, .y{}, .z{}},
-      .imageExtent{.width{m_width}, .height{m_height}, .depth{1}}};
+      .imageExtent{.width{m_width}, .height{m_height}, .depth{1u}}};
 
   const auto commandBuffer{begin_single_time_commands(commands)};
   if (!commandBuffer) {
@@ -246,9 +246,9 @@ texture_2d::initialize(const image_2d &image,
                   .a{VK_COMPONENT_SWIZZLE_A}},
       .subresourceRange{.aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
                         .baseMipLevel{},
-                        .levelCount{1},
+                        .levelCount{1u},
                         .baseArrayLayer{},
-                        .layerCount{1}}};
+                        .layerCount{1u}}};
 
   if (const VkResult result{vkCreateImageView(m_device, &imageViewCreateInfo,
                                               nullptr, &m_ImageView)};
