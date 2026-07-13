@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <glm/glm.hpp>
@@ -14,7 +15,7 @@
 #include <string_view>
 
 namespace {
-constexpr uint64_t max_swapchain_timeout{UINT64_MAX};
+constexpr std::uint64_t max_swapchain_timeout{UINT64_MAX};
 } // namespace
 
 bool realtime_mandelbrot_application::initialize() {
@@ -111,31 +112,37 @@ bool realtime_mandelbrot_application::shutdown() {
   m_index_buffer.reset();
 
   /* Destroy Pipelines */
-  if (m_graphics_pipeline)
+  if (m_graphics_pipeline) {
     vkDestroyPipeline(m_context.device(), m_graphics_pipeline, nullptr);
+  }
 
-  if (m_graphics_pipeline_layout)
+  if (m_graphics_pipeline_layout) {
     vkDestroyPipelineLayout(m_context.device(), m_graphics_pipeline_layout,
                             nullptr);
+  }
 
-  if (m_graphics_pipeline_ubo_buffer_descriptor_set_layout)
+  if (m_graphics_pipeline_ubo_buffer_descriptor_set_layout) {
     vkDestroyDescriptorSetLayout(
         m_context.device(),
         m_graphics_pipeline_ubo_buffer_descriptor_set_layout, nullptr);
+  }
 
-  if (m_graphics_pipeline_color_palette_descriptor_set_layout)
+  if (m_graphics_pipeline_color_palette_descriptor_set_layout) {
     vkDestroyDescriptorSetLayout(
         m_context.device(),
         m_graphics_pipeline_color_palette_descriptor_set_layout, nullptr);
+  }
 
-  if (m_graphics_pipeline_color_palette_descriptor_set)
+  if (m_graphics_pipeline_color_palette_descriptor_set) {
     vkFreeDescriptorSets(m_context.device(),
                          m_graphics_pipeline_descriptor_pool, 1,
                          &m_graphics_pipeline_color_palette_descriptor_set);
+  }
 
-  if (m_graphics_pipeline_descriptor_pool)
+  if (m_graphics_pipeline_descriptor_pool) {
     vkDestroyDescriptorPool(m_context.device(),
                             m_graphics_pipeline_descriptor_pool, nullptr);
+  }
 
   cleanup_swapchain();
 
@@ -187,7 +194,7 @@ bool realtime_mandelbrot_application::create_surface() {
 
   m_surface = *surface;
 
-  VkBool32 supported;
+  VkBool32 supported{VK_FALSE};
   vkGetPhysicalDeviceSurfaceSupportKHR(m_context.physical_device(),
                                        m_context.graphics_queue_family(),
                                        m_surface, &supported);
@@ -198,7 +205,7 @@ bool realtime_mandelbrot_application::create_swapchain() {
   VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
       m_context.physical_device(), m_surface, &m_surface_capabilities));
 
-  uint32_t surface_format_count;
+  std::uint32_t surface_format_count{};
   VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
       m_context.physical_device(), m_surface, &surface_format_count, nullptr));
   assert(surface_format_count > 0);
@@ -210,14 +217,15 @@ bool realtime_mandelbrot_application::create_swapchain() {
       available_surface_formats.data()));
 
   m_surface_format = available_surface_formats[0];
-  for (const VkSurfaceFormatKHR surface_format : available_surface_formats)
+  for (const VkSurfaceFormatKHR surface_format : available_surface_formats) {
     if (surface_format.format == VK_FORMAT_B8G8R8A8_UNORM &&
         surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
       m_surface_format = surface_format;
       break;
     }
+  }
 
-  uint32_t present_mode_count;
+  std::uint32_t present_mode_count{};
   VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
       m_context.physical_device(), m_surface, &present_mode_count, nullptr));
   assert(present_mode_count > 0);
@@ -229,19 +237,20 @@ bool realtime_mandelbrot_application::create_swapchain() {
 
   /* The only present mode guaranteed to be supported by the specification */
   m_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-  for (const VkPresentModeKHR present_mode : available_present_modes)
+  for (const VkPresentModeKHR present_mode : available_present_modes) {
     if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
       m_present_mode = present_mode;
       break;
     }
+  }
 
   m_max_frames_in_flight =
       m_present_mode == VK_PRESENT_MODE_MAILBOX_KHR ? (3) : (2);
 
-  const VkExtent2D min_swapchain_image_extent =
-      m_surface_capabilities.minImageExtent;
-  const VkExtent2D max_swapchain_image_extent =
-      m_surface_capabilities.maxImageExtent;
+  const VkExtent2D min_swapchain_image_extent{
+      m_surface_capabilities.minImageExtent};
+  const VkExtent2D max_swapchain_image_extent{
+      m_surface_capabilities.maxImageExtent};
 
   /* Clamp */
   m_swapchain_extent.width =
@@ -251,8 +260,8 @@ bool realtime_mandelbrot_application::create_swapchain() {
       std::clamp(m_swapchain_extent.height, min_swapchain_image_extent.height,
                  max_swapchain_image_extent.height);
 
-  const uint32_t min_image_count = m_surface_capabilities.minImageCount;
-  const uint32_t max_image_count = m_surface_capabilities.maxImageCount;
+  const std::uint32_t min_image_count{m_surface_capabilities.minImageCount};
+  const std::uint32_t max_image_count{m_surface_capabilities.maxImageCount};
   m_image_count = (min_image_count + 1) < max_image_count
                       ? (min_image_count + 1)
                       : max_image_count;
@@ -330,12 +339,12 @@ bool realtime_mandelbrot_application::create_swapchain() {
       .dstAccessMask{VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT},
       .dependencyFlags{}};
 
-  const std::array<VkAttachmentDescription, 1> attachments{color_attachment};
+  const std::array<VkAttachmentDescription, 1uz> attachments{color_attachment};
   const VkRenderPassCreateInfo render_pass_create_info{
       .sType{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO},
       .pNext{nullptr},
       .flags{},
-      .attachmentCount{static_cast<uint32_t>(attachments.size())},
+      .attachmentCount{static_cast<std::uint32_t>(attachments.size())},
       .pAttachments{attachments.data()},
       .subpassCount{1u},
       .pSubpasses{&subpass_description},
@@ -345,7 +354,7 @@ bool realtime_mandelbrot_application::create_swapchain() {
   VK_CHECK(vkCreateRenderPass(m_context.device(), &render_pass_create_info,
                               nullptr, &m_swapchain_render_pass));
 
-  uint32_t image_index = 0;
+  std::uint32_t image_index{0u};
   for (const VkImage image : m_swapchain_images) {
     const VkImageViewCreateInfo image_view_create_info{
         .sType{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO},
@@ -398,7 +407,7 @@ bool realtime_mandelbrot_application::create_swapchain() {
   m_semaphores.present_complete.resize(m_max_frames_in_flight);
   m_semaphores.render_complete.resize(m_max_frames_in_flight);
   m_in_flight_fences.resize(m_max_frames_in_flight);
-  for (uint32_t i = 0; i < m_max_frames_in_flight; ++i) {
+  for (std::uint32_t i{0u}; i < m_max_frames_in_flight; ++i) {
     VK_CHECK(vkCreateSemaphore(m_context.device(), &semaphore_create_info,
                                nullptr, &m_semaphores.present_complete[i]));
 
@@ -435,15 +444,16 @@ bool realtime_mandelbrot_application::load_assets() {
 }
 
 bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
-  constexpr VkDeviceSize vertex_buffer_size = sizeof(float) * 4 * 3;
-  constexpr VkDeviceSize index_buffer_size = sizeof(uint32_t) * 6;
+  constexpr VkDeviceSize vertex_buffer_size{sizeof(float) * 4 * 3};
+  constexpr VkDeviceSize index_buffer_size{sizeof(std::uint32_t) * 6};
 
-  const std::array<float, 4ull * 3ull> fullscreen_quad_vertices
+  const std::array<float, 4uz * 3uz> fullscreen_quad_vertices
 
       {-1.0f, -1.0f, 0.0f, 1.0f,  -1.0f, 0.0f,
        1.0f,  1.0f,  0.0f, -1.0f, 1.0f,  0.0f};
 
-  const std::array<uint32_t, 6ull> fullscreen_quad_indices{0, 1, 2, 2, 3, 0};
+  const std::array<std::uint32_t, 6uz> fullscreen_quad_indices{0, 1, 2,
+                                                               2, 3, 0};
 
   const single_time_command_context upload_context{
       .device{m_context.device()},
@@ -521,8 +531,7 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
   }
 
   /* TODO: Add support for doubles */
-  const bool device_supports_double_precision_floats =
-      false; // m_context.physical_device()Features.shaderFloat64;
+  const bool device_supports_double_precision_floats{false};
   const auto vertex_shader_module{create_shader_module(
       m_context.device(), device_supports_double_precision_floats
                               ? "assets/shaders/vertexShaderDoublePrecision.spv"
@@ -562,7 +571,7 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
       .pName{"main"},
       .pSpecializationInfo{nullptr}};
 
-  const std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages{
+  const std::array<VkPipelineShaderStageCreateInfo, 2uz> shader_stages{
       vertex_shader_stage_info, fragment_shader_stage_info};
 
   const VkVertexInputBindingDescription vertex_input_binding_description{
@@ -608,13 +617,13 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
       .scissorCount{1u},
       .pScissors{&scissor}};
 
-  const std::array<VkDynamicState, 2> dynamic_states{VK_DYNAMIC_STATE_VIEWPORT,
-                                                     VK_DYNAMIC_STATE_SCISSOR};
+  const std::array<VkDynamicState, 2uz> dynamic_states{
+      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
   const VkPipelineDynamicStateCreateInfo dynamic_state_info{
       .sType{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO},
       .pNext{nullptr},
       .flags{},
-      .dynamicStateCount{static_cast<uint32_t>(dynamic_states.size())},
+      .dynamicStateCount{static_cast<std::uint32_t>(dynamic_states.size())},
       .pDynamicStates{dynamic_states.data()}};
 
   const VkPipelineRasterizationStateCreateInfo rasterizer_state_info{
@@ -672,12 +681,12 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
         .stageFlags{VK_SHADER_STAGE_VERTEX_BIT},
         .pImmutableSamplers{nullptr}};
 
-    const std::array<VkDescriptorSetLayoutBinding, 1> bindings{ubo_binding};
+    const std::array<VkDescriptorSetLayoutBinding, 1uz> bindings{ubo_binding};
     const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
         .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO},
         .pNext{nullptr},
         .flags{},
-        .bindingCount{static_cast<uint32_t>(bindings.size())},
+        .bindingCount{static_cast<std::uint32_t>(bindings.size())},
         .pBindings{bindings.data()}};
 
     VK_CHECK(vkCreateDescriptorSetLayout(
@@ -693,13 +702,13 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
         .stageFlags{VK_SHADER_STAGE_FRAGMENT_BIT},
         .pImmutableSamplers{nullptr}};
 
-    const std::array<VkDescriptorSetLayoutBinding, 1> bindings{
+    const std::array<VkDescriptorSetLayoutBinding, 1uz> bindings{
         color_palette_binding};
     const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
         .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO},
         .pNext{nullptr},
         .flags{},
-        .bindingCount{static_cast<uint32_t>(bindings.size())},
+        .bindingCount{static_cast<std::uint32_t>(bindings.size())},
         .pBindings{bindings.data()}};
 
     VK_CHECK(vkCreateDescriptorSetLayout(
@@ -707,14 +716,15 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
         &m_graphics_pipeline_color_palette_descriptor_set_layout));
   }
 
-  const std::array<VkDescriptorSetLayout, 2> descriptor_set_layouts{
+  const std::array<VkDescriptorSetLayout, 2uz> descriptor_set_layouts{
       m_graphics_pipeline_ubo_buffer_descriptor_set_layout,
       m_graphics_pipeline_color_palette_descriptor_set_layout};
   const VkPipelineLayoutCreateInfo pipeline_layout_info{
       .sType{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO},
       .pNext{nullptr},
       .flags{},
-      .setLayoutCount{static_cast<uint32_t>(descriptor_set_layouts.size())},
+      .setLayoutCount{
+          static_cast<std::uint32_t>(descriptor_set_layouts.size())},
       .pSetLayouts{descriptor_set_layouts.data()},
       .pushConstantRangeCount{},
       .pPushConstantRanges{nullptr}};
@@ -734,7 +744,7 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
   const VkDescriptorPoolSize color_palette_image_descriptor_pool_size{
       .type{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, .descriptorCount{1u}};
 
-  const std::array<VkDescriptorPoolSize, 2> descriptor_pool_sizes{
+  const std::array<VkDescriptorPoolSize, 2uz> descriptor_pool_sizes{
       ubo_buffer_descriptor_pool_size,
       color_palette_image_descriptor_pool_size};
   const VkDescriptorPoolCreateInfo descriptor_pool_create_info{
@@ -742,7 +752,7 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
       .pNext{nullptr},
       .flags{VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT},
       .maxSets{10u},
-      .poolSizeCount{static_cast<uint32_t>(descriptor_pool_sizes.size())},
+      .poolSizeCount{static_cast<std::uint32_t>(descriptor_pool_sizes.size())},
       .pPoolSizes{descriptor_pool_sizes.data()}};
 
   VK_CHECK(vkCreateDescriptorPool(m_context.device(),
@@ -801,7 +811,7 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
   vkUpdateDescriptorSets(m_context.device(), 1,
                          &color_palette_descriptor_set_write, 0, nullptr);
 
-  const auto temporary = glm::mat4(1.0f);
+  const auto temporary{glm::mat4{1.0f}};
   if (!m_ubo_buffer->write(std::as_bytes(std::span{&temporary, 1})
                                .first(sizeof(uniform_buffer_object)))) {
     return false;
@@ -837,7 +847,7 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
       .sType{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO},
       .pNext{nullptr},
       .flags{},
-      .stageCount{static_cast<uint32_t>(shader_stages.size())},
+      .stageCount{static_cast<std::uint32_t>(shader_stages.size())},
       .pStages{shader_stages.data()},
       .pVertexInputState{&vertex_input_info},
       .pInputAssemblyState{&input_assembly},
@@ -889,8 +899,8 @@ bool realtime_mandelbrot_application::record_graphics_command_buffers() {
     return false;
   }
 
-  for (uint32_t i = 0; i < m_image_count; ++i) {
-    VkCommandBuffer &command_buffer = m_graphics_pipeline_command_buffers[i];
+  for (std::uint32_t i{0u}; i < m_image_count; ++i) {
+    VkCommandBuffer &command_buffer{m_graphics_pipeline_command_buffers[i]};
     const VkCommandBufferBeginInfo command_buffer_begin_info{
         .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO},
         .pNext{nullptr},
@@ -898,7 +908,7 @@ bool realtime_mandelbrot_application::record_graphics_command_buffers() {
         .pInheritanceInfo{nullptr}};
 
     const VkClearValue color_clear_value{{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    const std::array<VkClearValue, 1u> clear_values{color_clear_value};
+    const std::array<VkClearValue, 1uz> clear_values{color_clear_value};
 
     const VkRenderPassBeginInfo render_pass_begin_info{
         .sType{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO},
@@ -928,7 +938,7 @@ bool realtime_mandelbrot_application::record_graphics_command_buffers() {
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info,
                          VK_SUBPASS_CONTENTS_INLINE);
 
-    constexpr std::array<VkDeviceSize, 1ull> offsets{0};
+    constexpr std::array<VkDeviceSize, 1uz> offsets{0};
     const VkBuffer vertex_buffer_handle{m_vertex_buffer->handle()};
     vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer_handle,
                            offsets.data());
@@ -939,12 +949,12 @@ bool realtime_mandelbrot_application::record_graphics_command_buffers() {
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       m_graphics_pipeline);
 
-    const std::array<VkDescriptorSet, 2> descriptor_sets{
+    const std::array<VkDescriptorSet, 2uz> descriptor_sets{
         m_graphics_pipeline_ubo_buffer_descriptor_set,
         m_graphics_pipeline_color_palette_descriptor_set};
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             m_graphics_pipeline_layout, 0,
-                            static_cast<uint32_t>(descriptor_sets.size()),
+                            static_cast<std::uint32_t>(descriptor_sets.size()),
                             descriptor_sets.data(), 0, nullptr);
 
     vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
@@ -959,19 +969,20 @@ bool realtime_mandelbrot_application::record_graphics_command_buffers() {
 
 void realtime_mandelbrot_application::update_frame_data(
     const float delta_time) {
-  static float zoom_scale = 1.0f;
+  static float zoom_scale{1.0f};
   if (!m_window.has_value()) {
     return;
   }
 
-  const auto [window_width, window_height] = m_window->get_size();
+  const auto [window_width, window_height]{m_window->get_size()};
 
-  if (window_width <= 0 || window_height <= 0)
+  if (window_width <= 0 || window_height <= 0) {
     return;
+  }
 
-  const float aspect_ratio =
-      static_cast<float>(window_width) / static_cast<float>(window_height);
-  static uniform_buffer_object ubo = {
+  const float aspect_ratio{static_cast<float>(window_width) /
+                           static_cast<float>(window_height)};
+  static uniform_buffer_object ubo{
       .aspect_ratio{aspect_ratio},
       .center_x{0.5f},
       .center_y{0.0f},
@@ -982,37 +993,45 @@ void realtime_mandelbrot_application::update_frame_data(
       .padding_z{},
   };
 
-  constexpr float move_speed_factor = 0.25f;
-  constexpr float zoom_speed_factor = 1.0f;
+  constexpr float move_speed_factor{0.25f};
+  constexpr float zoom_speed_factor{1.0f};
 
-  const float zoom_speed = zoom_speed_factor;
-  const float move_speed = m_input.is_key_pressed(key_code::shift)
-                               ? move_speed_factor * 2.0f
-                               : move_speed_factor;
+  const float zoom_speed{zoom_speed_factor};
+  const float move_speed{m_input.is_key_pressed(key_code::shift)
+                             ? move_speed_factor * 2.0f
+                             : move_speed_factor};
   /* Move */
-  if (m_input.is_key_pressed(key_code::z))
+  if (m_input.is_key_pressed(key_code::z)) {
     zoom_scale += zoom_scale * zoom_speed * delta_time;
+  }
 
-  if (m_input.is_key_pressed(key_code::x))
+  if (m_input.is_key_pressed(key_code::x)) {
     zoom_scale -= zoom_scale * zoom_speed * delta_time;
+  }
 
-  if (m_input.is_key_pressed(key_code::w))
+  if (m_input.is_key_pressed(key_code::w)) {
     ubo.center_y += move_speed * delta_time * zoom_scale;
+  }
 
-  if (m_input.is_key_pressed(key_code::s))
+  if (m_input.is_key_pressed(key_code::s)) {
     ubo.center_y -= move_speed * delta_time * zoom_scale;
+  }
 
-  if (m_input.is_key_pressed(key_code::a))
+  if (m_input.is_key_pressed(key_code::a)) {
     ubo.center_x += move_speed * delta_time * zoom_scale;
+  }
 
-  if (m_input.is_key_pressed(key_code::d))
+  if (m_input.is_key_pressed(key_code::d)) {
     ubo.center_x -= move_speed * delta_time * zoom_scale;
+  }
 
-  if (m_input.is_key_pressed(key_code::up))
+  if (m_input.is_key_pressed(key_code::up)) {
     ubo.iteration_count += 1;
+  }
 
-  if (m_input.is_key_pressed(key_code::down))
+  if (m_input.is_key_pressed(key_code::down)) {
     ubo.iteration_count -= 1;
+  }
 
   /* Cap the zoom scale to avoid black border as we are rendering a quad */
   zoom_scale =
@@ -1028,26 +1047,27 @@ void realtime_mandelbrot_application::update_frame_data(
 }
 
 void realtime_mandelbrot_application::draw_frame() {
-  VkResult result = vkAcquireNextImageKHR(
+  VkResult result{vkAcquireNextImageKHR(
       m_context.device(), m_swapchain, max_swapchain_timeout,
       m_semaphores.present_complete[m_frame_index], VK_NULL_HANDLE,
-      &m_image_index);
+      &m_image_index)};
 
   if (result != VK_SUCCESS) {
     if (m_window.has_value()) {
-      const auto [window_width, window_height] = m_window->get_size();
+      const auto [window_width, window_height]{m_window->get_size()};
       recreate_swapchain(window_width, window_height);
     }
     return;
   }
 
-  if (m_images_in_flight[m_image_index] != VK_NULL_HANDLE)
+  if (m_images_in_flight[m_image_index] != VK_NULL_HANDLE) {
     vkWaitForFences(m_context.device(), 1, &m_images_in_flight[m_image_index],
                     VK_TRUE, UINT64_MAX);
+  }
 
   m_images_in_flight[m_image_index] = m_in_flight_fences[m_frame_index];
 
-  const std::array<VkPipelineStageFlags, 1ull> wait_stages{
+  const std::array<VkPipelineStageFlags, 1uz> wait_stages{
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
   const VkSubmitInfo submit_info{
@@ -1080,7 +1100,7 @@ void realtime_mandelbrot_application::draw_frame() {
   result = vkQueuePresentKHR(m_context.graphics_queue(), &present_info);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR && m_window.has_value()) {
-    const auto [window_width, window_height] = m_window->get_size();
+    const auto [window_width, window_height]{m_window->get_size()};
     recreate_swapchain(window_width, window_height);
   }
 
@@ -1088,7 +1108,7 @@ void realtime_mandelbrot_application::draw_frame() {
 }
 
 void realtime_mandelbrot_application::recreate_swapchain(
-    const uint32_t width, const uint32_t height) {
+    const std::uint32_t width, const std::uint32_t height) {
   m_swapchain_extent.width = width;
   m_swapchain_extent.height = height;
 
@@ -1098,7 +1118,7 @@ void realtime_mandelbrot_application::recreate_swapchain(
 
   while (m_swapchain_extent.width == 0 || m_swapchain_extent.height == 0) {
     m_window->poll([this](const event &polled) { on_event(polled); });
-    const auto [window_width, window_height] = m_window->get_size();
+    const auto [window_width, window_height]{m_window->get_size()};
 
     m_swapchain_extent.width = window_width;
     m_swapchain_extent.height = window_height;
@@ -1113,7 +1133,7 @@ void realtime_mandelbrot_application::recreate_swapchain(
 void realtime_mandelbrot_application::cleanup_swapchain() {
   vkDestroyRenderPass(m_context.device(), m_swapchain_render_pass, nullptr);
 
-  for (uint32_t i = 0; i < m_image_count; ++i) {
+  for (std::uint32_t i{0u}; i < m_image_count; ++i) {
     vkDestroyFramebuffer(m_context.device(), m_swapchain_framebuffers[i],
                          nullptr);
 
@@ -1123,17 +1143,20 @@ void realtime_mandelbrot_application::cleanup_swapchain() {
   }
 
   m_images_in_flight.clear();
-  for (uint32_t i = 0; i < m_max_frames_in_flight; ++i) {
-    if (m_semaphores.present_complete.empty())
+  for (std::uint32_t i{0u}; i < m_max_frames_in_flight; ++i) {
+    if (m_semaphores.present_complete.empty()) {
       return;
+    }
 
-    if (m_semaphores.present_complete[i])
+    if (m_semaphores.present_complete[i]) {
       vkDestroySemaphore(m_context.device(), m_semaphores.present_complete[i],
                          nullptr);
+    }
 
-    if (m_semaphores.render_complete[i])
+    if (m_semaphores.render_complete[i]) {
       vkDestroySemaphore(m_context.device(), m_semaphores.render_complete[i],
                          nullptr);
+    }
   }
 
   vkDestroySwapchainKHR(m_context.device(), m_swapchain, nullptr);

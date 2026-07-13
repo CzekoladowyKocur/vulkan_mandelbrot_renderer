@@ -30,7 +30,8 @@ private:
   void update_frame_data(const float delta_time);
   void draw_frame();
   /* Swapchain */
-  void recreate_swapchain(const uint32_t width, const uint32_t height);
+  void recreate_swapchain(const std::uint32_t width,
+                          const std::uint32_t height);
   void cleanup_swapchain();
 
 private:
@@ -39,7 +40,7 @@ private:
     float center_x;
     float center_y;
     float zoom_scale;
-    int32_t iteration_count;
+    std::int32_t iteration_count;
 
     float padding_x;
     float padding_y;
@@ -71,8 +72,8 @@ private:
     std::vector<VkSemaphore> render_complete;
   } m_semaphores;
 
-  uint32_t m_max_frames_in_flight{2};
-  uint32_t m_image_count{};
+  std::uint32_t m_max_frames_in_flight{2};
+  std::uint32_t m_image_count{};
 
   std::vector<VkImage> m_swapchain_images;
   std::vector<VkImageView> m_swapchain_image_views;
@@ -104,8 +105,8 @@ private:
   std::vector<VkCommandBuffer> m_graphics_pipeline_command_buffers;
 
   /* Swapchain synchronization */
-  uint32_t m_image_index{};
-  uint32_t m_frame_index{};
+  std::uint32_t m_image_index{};
+  std::uint32_t m_frame_index{};
 
   std::vector<VkFence> m_in_flight_fences;
   std::vector<VkFence> m_images_in_flight;
