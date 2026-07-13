@@ -13,9 +13,9 @@ layout(set = 1, binding = 0) uniform sampler2D u_ColorPalette;
 
 void main()
 {
-	vec2 c; 
-	c.x = (v_TextureCoordinates.x - 0.5) * v_ZoomScale - v_CenterX;
-	c.y = v_AspectRatio * (v_TextureCoordinates.y - 0.5) * v_ZoomScale - v_CenterY;
+	vec2 c;
+	c.x = v_AspectRatio * (v_TextureCoordinates.x - 0.5) * v_ZoomScale - v_CenterX;
+	c.y = (v_TextureCoordinates.y - 0.5) * v_ZoomScale - v_CenterY;
 	
     vec2 z = c;
     int i;
