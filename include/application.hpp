@@ -2,6 +2,7 @@
 #include "include/VulkanTypes.hpp"
 #include "include/texture_2d.hpp"
 #include "include/vulkan_buffer.hpp"
+#include "include/vulkan_context.hpp"
 #include "include/window.hpp"
 #include <cstdint>
 #include <optional>
@@ -28,9 +29,7 @@ public:
 
 private:
   /* Vulkan Context Initialization */
-  bool CreateInstance();
   bool CreateSurface();
-  bool CreateLogicalDevice();
   bool CreateSwapchain();
   bool LoadAssets();
 
@@ -47,7 +46,8 @@ private:
   void RecreateSwapchain(const uint32_t width, const uint32_t height);
   void CleanupSwapchain();
   /* Pipeline */
-  VkShaderModule CreateShaderModule(const std::string_view filepath) const;
+  [[nodiscard]] VkShaderModule
+  CreateShaderModule(const std::string_view filepath) const;
 
 private:
   struct UBO {
@@ -62,41 +62,16 @@ private:
     float padding_z;
   };
 
-  struct QueueFamilyIndices {
-    int32_t Graphics = -1;
-    int32_t Compute = -1;
-    int32_t Transfer = -1;
-  };
-
-  QueueFamilyIndices GetQueueFamilyIndices(int32_t flags);
-
 private:
   ERenderMethod m_RenderMethod{ERenderMethod::Default};
   bool m_Running{true};
   std::optional<window> m_window;
   input m_input;
   /* Vulkan API */
-  /* Instance (loads the vulkan dll driver) */
-  VkInstance m_Instance{VK_NULL_HANDLE};
+  vulkan_context m_Context;
 
   /* Surface*/
   VkSurfaceKHR m_Surface{VK_NULL_HANDLE};
-
-  /* Physical Device */
-  VkPhysicalDeviceProperties m_PhysicalDeviceProperties{};
-  VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures{};
-  mutable VkPhysicalDeviceMemoryProperties m_PhysicalDeviceMemoryProperties{};
-  VkPhysicalDevice m_PhysicalDevice{VK_NULL_HANDLE};
-
-  QueueFamilyIndices m_QueueIndices{};
-
-  /* Logical Device */
-  VkDevice m_LogicalDevice{VK_NULL_HANDLE};
-  VkQueue m_GraphicsQueue{VK_NULL_HANDLE};
-  VkQueue m_ComputeQueue{VK_NULL_HANDLE};
-  VkQueue m_PresentQueue{VK_NULL_HANDLE};
-  VkCommandPool m_GraphicsCommandPool{VK_NULL_HANDLE};
-  VkCommandPool m_ComputeCommandPool{VK_NULL_HANDLE};
 
   /* Swapchain */
   VkSwapchainKHR m_Swapchain{VK_NULL_HANDLE};
@@ -165,9 +140,4 @@ private:
 
   /* Assets */
   std::optional<texture_2d> m_ColorPaletteTexture;
-
-  /* Debug */
-#ifdef APP_DEBUG
-  VkDebugReportCallbackEXT m_DebugReportCallback{VK_NULL_HANDLE};
-#endif
 };
