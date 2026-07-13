@@ -7,9 +7,20 @@ layout(location = 2) in float v_CenterX;
 layout(location = 3) in float v_CenterY;
 layout(location = 4) in float v_ZoomScale;
 layout(location = 5) in flat int v_IterationCount;
+layout(location = 6) in float v_PalettePeriod;
+layout(location = 7) in float v_PaletteOffset;
 layout(location = 0) out vec4 Color;
 
-layout(set = 1, binding = 0) uniform sampler2D u_ColorPalette;
+/* https://iquilezles.org/articles/palettes/ */
+vec3 palette(float t)
+{
+	const vec3 a = vec3(0.5, 0.5, 0.5);
+	const vec3 b = vec3(0.5, 0.5, 0.5);
+	const vec3 c = vec3(1.0, 1.0, 1.0);
+	const vec3 d = vec3(0.263, 0.416, 0.557);
+
+	return a + b * cos(6.28318 * (c * t + d));
+}
 
 void main()
 {
@@ -21,16 +32,19 @@ void main()
     int i;
     for(i = 0; i < v_IterationCount; ++i)
 	{
-		float x = (z.x * z.x - z.y * z.y) + c.x;
-		float y = (z.y * z.x + z.x * z.y) + c.y;
-	
-		if((x * x + y * y) > 4.0)
+		z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+
+		if(dot(z, z) > 256.0)
 			break;
-		
-		z.x = x;
-		z.y = y;
     }
 
-	const float value = i == v_IterationCount ? 0.0 : float(	i) / v_IterationCount;
-	Color = texture(u_ColorPalette, vec2(value, value)); 
+	if(i == v_IterationCount)
+	{
+		Color = vec4(0.0, 0.0, 0.0, 1.0);
+		return;
+	}
+
+	const float smoothIteration = float(i) + 1.0 - log2(0.5 * log(dot(z, z)));
+	const float value = fract(smoothIteration / v_PalettePeriod + v_PaletteOffset);
+	Color = vec4(palette(value), 1.0);
 }
