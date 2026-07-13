@@ -1,6 +1,6 @@
 #pragma once
-#include "include/Image2D.hpp"
 #include "include/VulkanTypes.hpp"
+#include "include/image_2d.hpp"
 
 struct texture_2d_sampler_props final {
   VkFilter filter{VK_FILTER_LINEAR};
