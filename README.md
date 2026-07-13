@@ -6,6 +6,12 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
 ![Vulkan](https://img.shields.io/badge/Vulkan-1.3%2B-red)
 
+> **Note:** This is a continuation of my own 2022 project, originally published
+> under my previous GitHub account ([CzekoladowyKocur/Vulkan-Mandelbrot-Set](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set)).
+> The 2026 revision modernizes it end to end: C++17 → C++23, Win32-only → cross-platform
+> (Windows/macOS with a native Cocoa backend), CI for MSVC and clang-cl, enforced
+> clang-tidy/clang-format, and an offline compute-shader rendering path.
+
 A cross-platform (Windows/macOS) real-time Mandelbrot set renderer written in C++23 and Vulkan,
 with interactive navigation and offline rendering to PNG using compute shaders.
 
