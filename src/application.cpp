@@ -10,31 +10,12 @@
 #include <glm/glm.hpp>
 #include <print>
 #include <span>
-#include <stb_image_write.h>
 #include <string>
 #include <string_view>
 
 namespace Utilities {
 constexpr uint64_t MaxSwapchainTimeout = UINT64_MAX;
-/* These can be tweaked. In order to change the dimensions, adjust the
- * computePFN_vkDebugReportCallbackEXT shader code and recompile them. */
-constexpr uint32_t ComputeRenderWidth = 3200 * 2;
-constexpr uint32_t ComputeRenderHeight = 2400 * 2;
-constexpr std::size_t ComputeBufferSize =
-    static_cast<std::size_t>(ComputeRenderWidth) * ComputeRenderHeight *
-    sizeof(float) * 4ull;
-constexpr std::size_t RenderedImageSize =
-    static_cast<std::size_t>(ComputeRenderWidth) * ComputeRenderHeight *
-    sizeof(uint8_t) * 4ull;
 } // namespace Utilities
-
-VulkanApp::VulkanApp(const ERenderMethod renderMethod)
-    : m_RenderMethod{renderMethod} {}
-
-VulkanApp::~VulkanApp() {
-  m_Running = false;
-  /* Vulkan API */
-}
 
 bool VulkanApp::Initialize() {
   auto context{vulkan_context::create(
@@ -47,76 +28,53 @@ bool VulkanApp::Initialize() {
 
   m_Context = std::move(*context);
 
-  if (m_RenderMethod == ERenderMethod::Graphics) {
-    if (!LoadAssets()) {
-      std::println("Failed to load assets");
-      return false;
-    }
+  if (!LoadAssets()) {
+    std::println("Failed to load assets");
+    return false;
+  }
 
-    auto created{window::create({.width{1280u},
-                                 .height{720u},
-                                 .name{"Vulkan Mandelbrot Set Renderer"},
-                                 .maximized{true}})};
+  auto created{window::create({.width{1280u},
+                               .height{720u},
+                               .name{"Vulkan Mandelbrot Set Renderer"},
+                               .maximized{true}})};
 
-    if (!created) {
-      std::println("Failed to initialize window: {}",
-                   created.error().message());
+  if (!created) {
+    std::println("Failed to initialize window: {}", created.error().message());
 
-      return false;
-    }
+    return false;
+  }
 
-    m_window = std::move(*created);
+  m_window = std::move(*created);
 
-    if (!CreateSurface()) {
-      std::println("Failed to create vulkan surface");
-      return false;
-    }
+  if (!CreateSurface()) {
+    std::println("Failed to create vulkan surface");
+    return false;
+  }
 
-    if (!CreateSwapchain()) {
-      std::println("Failed to create vulkan swapchain");
-      return false;
-    }
+  if (!CreateSwapchain()) {
+    std::println("Failed to create vulkan swapchain");
+    return false;
+  }
 
-    if (!CreateGraphicsBasedPipeline()) {
-      std::println("Failed to create graphics based pipeline");
-      return false;
-    }
+  if (!CreateGraphicsBasedPipeline()) {
+    std::println("Failed to create graphics based pipeline");
+    return false;
+  }
 
-    if (!AllocateGraphicsCommandBuffers()) {
-      std::println("Failed to allocate graphics command buffers");
-      return false;
-    }
+  if (!AllocateGraphicsCommandBuffers()) {
+    std::println("Failed to allocate graphics command buffers");
+    return false;
+  }
 
-    if (!RecordGraphicsCommandBuffers()) {
-      std::println("Failed to create graphics command buffers");
-      return false;
-    }
-  } else {
-    if (!CreateComputeBasedPipeline()) {
-      std::println("Failed to create compute based pipeline");
-      return false;
-    }
-
-    if (!AllocateComputeCommandBuffers()) {
-      std::println("Failed to allocate compute commands buffers");
-      return false;
-    }
-
-    if (!RecordComputeCommandBuffers()) {
-      std::println("Failed to create compute command buffers");
-      return false;
-    }
+  if (!RecordGraphicsCommandBuffers()) {
+    std::println("Failed to create graphics command buffers");
+    return false;
   }
 
   return true;
 }
 
 bool VulkanApp::Run() {
-  if (m_RenderMethod == ERenderMethod::Compute) {
-    DrawFrame();
-    return true;
-  }
-
   if (!m_window.has_value()) {
     return false;
   }
@@ -177,24 +135,6 @@ bool VulkanApp::Shutdown() {
   if (m_GraphicsPipelineDescriptorPool)
     vkDestroyDescriptorPool(m_Context.device(),
                             m_GraphicsPipelineDescriptorPool, nullptr);
-
-  /* Compute */
-  m_ComputePipelineStorageBuffer.reset();
-
-  if (m_ComputePipeline)
-    vkDestroyPipeline(m_Context.device(), m_ComputePipeline, nullptr);
-
-  if (m_ComputePipelineLayout)
-    vkDestroyPipelineLayout(m_Context.device(), m_ComputePipelineLayout,
-                            nullptr);
-
-  if (m_ComputePipelineDescriptorSetLayout)
-    vkDestroyDescriptorSetLayout(m_Context.device(),
-                                 m_ComputePipelineDescriptorSetLayout, nullptr);
-
-  if (m_ComputePipelineDescriptorPool)
-    vkDestroyDescriptorPool(m_Context.device(), m_ComputePipelineDescriptorPool,
-                            nullptr);
 
   CleanupSwapchain();
 
@@ -592,23 +532,26 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   /* TODO: Add support for doubles */
   const bool deviceSupportsDoublePrecisionFloats =
       false; // m_Context.physical_device()Features.shaderFloat64;
-  m_VertexShaderModule =
-      CreateShaderModule(deviceSupportsDoublePrecisionFloats
-                             ? "assets/shaders/vertexShaderDoublePrecision.spv"
-                             : "assets/shaders/vertexShader.spv");
-  if (!m_VertexShaderModule) {
+  const auto vertexShaderModule{create_shader_module(
+      m_Context.device(), deviceSupportsDoublePrecisionFloats
+                              ? "assets/shaders/vertexShaderDoublePrecision.spv"
+                              : "assets/shaders/vertexShader.spv")};
+  if (!vertexShaderModule) {
     std::println("Failed to create vertex shader module");
     return false;
   }
+  m_VertexShaderModule = *vertexShaderModule;
 
-  m_FragmentShaderModule = CreateShaderModule(
+  const auto fragmentShaderModule{create_shader_module(
+      m_Context.device(),
       deviceSupportsDoublePrecisionFloats
           ? "assets/shaders/fragmentShaderDoublePrecision.spv"
-          : "assets/shaders/fragmentShader.spv");
-  if (!m_FragmentShaderModule) {
+          : "assets/shaders/fragmentShader.spv")};
+  if (!fragmentShaderModule) {
     std::println("Failed to create fragment shader module");
     return false;
   }
+  m_FragmentShaderModule = *fragmentShaderModule;
 
   VkPipelineShaderStageCreateInfo vertShaderStageInfo;
   vertShaderStageInfo.sType =
@@ -944,150 +887,6 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   return true;
 }
 
-bool VulkanApp::CreateComputeBasedPipeline() {
-  auto storageBuffer{vulkan_buffer::create(
-      {.size{Utilities::ComputeBufferSize},
-       .device{m_Context.device()},
-       .physical_device{m_Context.physical_device()},
-       .usage{VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
-       .memory_flags{VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}})};
-  if (!storageBuffer) {
-    return false;
-  }
-
-  m_ComputePipelineStorageBuffer.emplace(std::move(*storageBuffer));
-
-  m_ComputeShaderModule =
-      CreateShaderModule("assets/shaders/computeShader.spv");
-  if (!m_ComputeShaderModule) {
-    std::println("Failed to create compute shader");
-    return false;
-  }
-
-  VkDescriptorSetLayoutBinding outImageBufferBinding;
-  outImageBufferBinding.binding = 0;
-  outImageBufferBinding.descriptorCount = 1;
-  outImageBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  outImageBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-  outImageBufferBinding.pImmutableSamplers = nullptr;
-
-  const std::array<VkDescriptorSetLayoutBinding, 1> bindings{
-      outImageBufferBinding};
-  VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-  descriptorSetLayoutCreateInfo.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  descriptorSetLayoutCreateInfo.bindingCount =
-      static_cast<uint32_t>(bindings.size());
-  descriptorSetLayoutCreateInfo.pBindings = bindings.data();
-  descriptorSetLayoutCreateInfo.flags = 0;
-  descriptorSetLayoutCreateInfo.pNext = nullptr;
-
-  if (vkCreateDescriptorSetLayout(
-          m_Context.device(), &descriptorSetLayoutCreateInfo, nullptr,
-          &m_ComputePipelineDescriptorSetLayout) != VK_SUCCESS) {
-    std::println("Failed to create compute pipeline descriptor set layout");
-    return false;
-  }
-
-  VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-  pipelineLayoutCreateInfo.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-  pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
-  pipelineLayoutCreateInfo.setLayoutCount = 1;
-  pipelineLayoutCreateInfo.pSetLayouts = &m_ComputePipelineDescriptorSetLayout;
-  pipelineLayoutCreateInfo.flags = 0;
-  pipelineLayoutCreateInfo.pNext = nullptr;
-
-  if (vkCreatePipelineLayout(m_Context.device(), &pipelineLayoutCreateInfo,
-                             nullptr, &m_ComputePipelineLayout) != VK_SUCCESS) {
-    std::println("Failed to create compute pipeline layout");
-    return false;
-  }
-
-  VkDescriptorPoolSize storageBufferPoolSize;
-  storageBufferPoolSize.descriptorCount = 1;
-  storageBufferPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-
-  const std::array<VkDescriptorPoolSize, 1> poolSizes{storageBufferPoolSize};
-  VkDescriptorPoolCreateInfo descriptorPoolCreateInfo;
-  descriptorPoolCreateInfo.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  descriptorPoolCreateInfo.maxSets = 1;
-  descriptorPoolCreateInfo.poolSizeCount =
-      static_cast<uint32_t>(poolSizes.size());
-  descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
-  descriptorPoolCreateInfo.flags = 0;
-  descriptorPoolCreateInfo.pNext = nullptr;
-
-  VK_CHECK(vkCreateDescriptorPool(m_Context.device(), &descriptorPoolCreateInfo,
-                                  nullptr, &m_ComputePipelineDescriptorPool));
-
-  VkDescriptorSetAllocateInfo descriptorSetAllocateInfo;
-  descriptorSetAllocateInfo.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  descriptorSetAllocateInfo.descriptorSetCount = 1;
-  descriptorSetAllocateInfo.pSetLayouts = &m_ComputePipelineDescriptorSetLayout;
-  descriptorSetAllocateInfo.descriptorPool = m_ComputePipelineDescriptorPool;
-  descriptorSetAllocateInfo.pNext = nullptr;
-
-  VK_CHECK(
-      vkAllocateDescriptorSets(m_Context.device(), &descriptorSetAllocateInfo,
-                               &m_ComputePipelineStorageBufferDescriptorSet));
-
-  VkDescriptorBufferInfo bufferInfo;
-  bufferInfo.buffer = m_ComputePipelineStorageBuffer->handle();
-  bufferInfo.range = Utilities::ComputeBufferSize;
-  bufferInfo.offset = 0;
-
-  VkWriteDescriptorSet descriptorSetWrite;
-  descriptorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  descriptorSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  descriptorSetWrite.dstBinding = 0;
-  descriptorSetWrite.dstArrayElement = 0;
-  descriptorSetWrite.descriptorCount = 1;
-  descriptorSetWrite.dstSet = m_ComputePipelineStorageBufferDescriptorSet;
-  descriptorSetWrite.pBufferInfo = &bufferInfo;
-  descriptorSetWrite.pImageInfo = nullptr;
-  descriptorSetWrite.pTexelBufferView = nullptr;
-  descriptorSetWrite.pNext = nullptr;
-
-  const std::array<VkWriteDescriptorSet, 1> descriptorSetWrites{
-      descriptorSetWrite};
-  vkUpdateDescriptorSets(m_Context.device(),
-                         static_cast<uint32_t>(descriptorSetWrites.size()),
-                         descriptorSetWrites.data(), 0, nullptr);
-
-  VkPipelineShaderStageCreateInfo computeShaderStageInfo{
-      .stage{VK_SHADER_STAGE_COMPUTE_BIT}};
-  computeShaderStageInfo.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  computeShaderStageInfo.module = m_ComputeShaderModule;
-  computeShaderStageInfo.pName = "main";
-
-  VkComputePipelineCreateInfo pipelineCreateInfo{.stage =
-                                                     computeShaderStageInfo};
-  pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  pipelineCreateInfo.stage = computeShaderStageInfo;
-  pipelineCreateInfo.layout = m_ComputePipelineLayout;
-  pipelineCreateInfo.basePipelineIndex = 0;
-  pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-  pipelineCreateInfo.flags = 0;
-  pipelineCreateInfo.pNext = nullptr;
-
-  if (vkCreateComputePipelines(m_Context.device(), VK_NULL_HANDLE, 1,
-                               &pipelineCreateInfo, nullptr,
-                               &m_ComputePipeline) != VK_SUCCESS) {
-    std::println("Failed to create compute pipeline");
-    return false;
-  }
-
-  vkDestroyShaderModule(m_Context.device(), m_ComputeShaderModule, nullptr);
-
-  return true;
-}
-
 bool VulkanApp::AllocateGraphicsCommandBuffers() {
   VkCommandBufferAllocateInfo commandBufferAllocateInfo;
   commandBufferAllocateInfo.sType =
@@ -1101,22 +900,6 @@ bool VulkanApp::AllocateGraphicsCommandBuffers() {
   VK_CHECK(vkAllocateCommandBuffers(m_Context.device(),
                                     &commandBufferAllocateInfo,
                                     m_GraphicsPipelineCommandBuffers.data()));
-
-  return true;
-}
-
-bool VulkanApp::AllocateComputeCommandBuffers() {
-  VkCommandBufferAllocateInfo commandBufferAllocateInfo;
-  commandBufferAllocateInfo.sType =
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  commandBufferAllocateInfo.commandPool = m_Context.compute_command_pool();
-  commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  commandBufferAllocateInfo.commandBufferCount = 1;
-  commandBufferAllocateInfo.pNext = nullptr;
-
-  VK_CHECK(vkAllocateCommandBuffers(m_Context.device(),
-                                    &commandBufferAllocateInfo,
-                                    &m_ComputePipelineCommandBuffer));
 
   return true;
 }
@@ -1193,41 +976,6 @@ bool VulkanApp::RecordGraphicsCommandBuffers() {
 
     VK_CHECK(vkEndCommandBuffer(commandBuffer));
   }
-
-  return true;
-}
-
-bool VulkanApp::RecordComputeCommandBuffers() {
-  VkCommandBufferBeginInfo commandBufferBeginInfo;
-  commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  commandBufferBeginInfo.pInheritanceInfo = nullptr;
-  commandBufferBeginInfo.flags = 0;
-  commandBufferBeginInfo.pNext = nullptr;
-
-  VkCommandBuffer &commandBuffer = m_ComputePipelineCommandBuffer;
-
-  VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-
-  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                    m_ComputePipeline);
-
-  const std::array<VkDescriptorSet, 1> descriptorSets{
-      m_ComputePipelineStorageBufferDescriptorSet};
-  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-                          m_ComputePipelineLayout, 0,
-                          static_cast<uint32_t>(descriptorSets.size()),
-                          descriptorSets.data(), 0, nullptr);
-
-  const int WORKGROUP_SIZE = 32; // Workgroup size in compute shader.
-
-  vkCmdDispatch(commandBuffer,
-                static_cast<uint32_t>(ceil(Utilities::ComputeRenderWidth /
-                                           static_cast<float>(WORKGROUP_SIZE))),
-                static_cast<uint32_t>(ceil(Utilities::ComputeRenderHeight /
-                                           static_cast<float>(WORKGROUP_SIZE))),
-                1);
-
-  VK_CHECK(vkEndCommandBuffer(commandBuffer));
 
   return true;
 }
@@ -1320,60 +1068,6 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
 }
 
 void VulkanApp::DrawFrame() {
-  struct Pixel {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-    uint8_t a;
-  };
-
-  if (m_RenderMethod == ERenderMethod::Compute) {
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_ComputePipelineCommandBuffer;
-
-    VK_CHECK(vkQueueSubmit(m_Context.compute_queue(), 1, &submitInfo,
-                           VK_NULL_HANDLE));
-    VK_CHECK(vkQueueWaitIdle(m_Context.compute_queue()));
-
-    std::vector<std::byte> pixelData(Utilities::ComputeBufferSize);
-    if (!m_ComputePipelineStorageBuffer.has_value() ||
-        !m_ComputePipelineStorageBuffer->read(pixelData)) {
-      std::println("Failed to read compute storage buffer");
-      return;
-    }
-    const auto *const pmappedMemory{
-        reinterpret_cast<const Pixel *>(pixelData.data())};
-
-    std::vector<uint8_t> image;
-    /* To prevent unnecessary vector buffer reallocations */
-    image.reserve(Utilities::RenderedImageSize);
-    for (uint32_t i = 0; i < Utilities::RenderedImageSize; i += 4) {
-      float pixelR = *reinterpret_cast<const float *>(&pmappedMemory[i + 0]);
-      float pixelG = *reinterpret_cast<const float *>(&pmappedMemory[i + 1]);
-      float pixelB = *reinterpret_cast<const float *>(&pmappedMemory[i + 2]);
-      float pixelA = *reinterpret_cast<const float *>(&pmappedMemory[i + 3]);
-
-      image.push_back(static_cast<uint8_t>(pixelR * 255.0f));
-      image.push_back(static_cast<uint8_t>(pixelG * 255.0f));
-      image.push_back(static_cast<uint8_t>(pixelB * 255.0f));
-      image.push_back(static_cast<uint8_t>(pixelA * 255.0f));
-    }
-
-    const auto success =
-        stbi_write_png("mandelbrot.png", Utilities::ComputeRenderWidth,
-                       Utilities::ComputeRenderHeight, 4, image.data(),
-                       Utilities::ComputeRenderWidth * 4);
-    if (!success) {
-      std::println("encoder error: Failed to write PNG");
-    } else {
-      std::println("Sucessfully rendered image");
-    }
-
-    return;
-  }
-
   VkResult result = vkAcquireNextImageKHR(
       m_Context.device(), m_Swapchain, Utilities::MaxSwapchainTimeout,
       m_Semaphores.PresentComplete[m_FrameIndex], VK_NULL_HANDLE,
@@ -1481,41 +1175,4 @@ void VulkanApp::CleanupSwapchain() {
   }
 
   vkDestroySwapchainKHR(m_Context.device(), m_Swapchain, nullptr);
-}
-
-VkShaderModule
-VulkanApp::CreateShaderModule(const std::string_view filepath) const {
-  std::string filepathString{filepath.data(), filepath.size()};
-
-  std::ifstream file(filepathString.data(), std::ios::ate | std::ios::binary);
-  if (!file.is_open()) {
-    std::println("Failed to open file with given filepath: {}",
-                 filepathString.data());
-    return VkShaderModule{};
-  }
-
-  std::vector<char> code;
-  const std::streampos fileSize = file.tellg();
-  code.resize(static_cast<size_t>(fileSize));
-  file.seekg(std::ios::beg);
-  file.read(code.data(), static_cast<std::streamsize>(fileSize));
-  file.close();
-
-  VkShaderModuleCreateInfo shaderModuleCreateInfo;
-  shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  shaderModuleCreateInfo.codeSize = static_cast<uint32_t>(code.size());
-  shaderModuleCreateInfo.pCode =
-      reinterpret_cast<const uint32_t *>(code.data());
-  shaderModuleCreateInfo.flags = 0;
-  shaderModuleCreateInfo.pNext = nullptr;
-
-  VkShaderModule module;
-  if (vkCreateShaderModule(m_Context.device(), &shaderModuleCreateInfo, nullptr,
-                           &module) != VK_SUCCESS) {
-    std::println("Failed to create shader module from given filepath: {}",
-                 filepath.data());
-    return VkShaderModule{};
-  }
-
-  return module;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "include/VulkanTypes.hpp"
 #include <cstdint>
+#include <filesystem>
 #include <span>
 
 struct vulkan_context_props final {
@@ -64,3 +65,7 @@ private:
   VkCommandPool m_graphics_command_pool{VK_NULL_HANDLE};
   VkCommandPool m_compute_command_pool{VK_NULL_HANDLE};
 };
+
+[[nodiscard]] std::expected<VkShaderModule, std::error_code>
+create_shader_module(const VkDevice device,
+                     const std::filesystem::path &path) noexcept;

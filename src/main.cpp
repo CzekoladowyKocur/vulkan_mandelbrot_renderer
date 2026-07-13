@@ -10,29 +10,40 @@
 #include <vulkan/vulkan.h>
 
 #include "include/application.hpp"
+#include "include/compute_mandelbrot_application.hpp"
 
-[[nodiscard]] static VulkanApp::ERenderMethod parse_render_method() noexcept {
+[[nodiscard]] static bool parse_compute_flag() noexcept {
   int argument_count{0};
   wchar_t **const arguments{
       ::CommandLineToArgvW(::GetCommandLineW(), &argument_count)};
   if (arguments == nullptr) {
-    return VulkanApp::ERenderMethod::Graphics;
+    return false;
   }
 
-  auto render_method{VulkanApp::ERenderMethod::Graphics};
+  bool compute{false};
   for (int i{1}; i < argument_count; ++i) {
     if (std::wstring_view{arguments[i]} == L"--compute") {
-      render_method = VulkanApp::ERenderMethod::Compute;
+      compute = true;
     }
   }
 
   ::LocalFree(static_cast<HLOCAL>(static_cast<void *>(arguments)));
-  return render_method;
+  return compute;
 }
 
-[[nodiscard]] static int
-vulkan_app_main(const VulkanApp::ERenderMethod render_method) {
-  const auto application{std::make_unique<VulkanApp>(render_method)};
+[[nodiscard]] static int vulkan_app_main(const bool compute) {
+  if (compute) {
+    if (const auto result{run_compute_mandelbrot_application("mandelbrot.png")};
+        !result) {
+      std::println("Failed to render mandelbrot image: {}",
+                   result.error().message());
+      return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+  }
+
+  const auto application{std::make_unique<VulkanApp>()};
 
   if (!application->Initialize()) {
     std::println("Failed to initialize application");
@@ -85,7 +96,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 
   ::ShowWindow(::GetConsoleWindow(), nShowCmd != 0 ? SW_SHOW : SW_HIDE);
 
-  const int result{vulkan_app_main(parse_render_method())};
+  const int result{vulkan_app_main(parse_compute_flag())};
 
   ::UnregisterClassA(g_window_class_name, hInstance);
   return result;
