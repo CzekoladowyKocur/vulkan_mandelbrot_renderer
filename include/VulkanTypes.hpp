@@ -405,9 +405,3 @@ inline void set_image_layout(set_image_layout_props &&props) noexcept {
 #else
 #define VK_CHECK(x) x
 #endif
-
-struct VulkanBuffer {
-  VkBuffer Handle = VK_NULL_HANDLE;
-  VkDeviceMemory DeviceMemory = VK_NULL_HANDLE;
-  std::vector<std::byte> CPUData;
-};

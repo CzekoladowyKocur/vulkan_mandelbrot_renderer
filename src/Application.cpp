@@ -9,6 +9,7 @@
 #include <fstream>
 #include <glm/glm.hpp>
 #include <print>
+#include <span>
 #include <stb_image_write.h>
 #include <string>
 #include <string_view>
@@ -194,23 +195,9 @@ bool VulkanApp::Shutdown() {
 
   /* Graphics */
   /* Destroy buffers */
-  if (m_UBOBuffer.Handle) {
-    vkFreeMemory(m_LogicalDevice, m_UBOBuffer.DeviceMemory, nullptr);
-
-    vkDestroyBuffer(m_LogicalDevice, m_UBOBuffer.Handle, nullptr);
-  }
-
-  if (m_VertexBuffer.Handle) {
-    vkFreeMemory(m_LogicalDevice, m_VertexBuffer.DeviceMemory, nullptr);
-
-    vkDestroyBuffer(m_LogicalDevice, m_VertexBuffer.Handle, nullptr);
-  }
-
-  if (m_IndexBuffer.Handle) {
-    vkFreeMemory(m_LogicalDevice, m_IndexBuffer.DeviceMemory, nullptr);
-
-    vkDestroyBuffer(m_LogicalDevice, m_IndexBuffer.Handle, nullptr);
-  }
+  m_UBOBuffer.reset();
+  m_VertexBuffer.reset();
+  m_IndexBuffer.reset();
 
   /* Destroy Pipelines */
   if (m_GraphicsPipeline)
@@ -240,13 +227,7 @@ bool VulkanApp::Shutdown() {
   if (m_GraphicsCommandPool)
     vkDestroyCommandPool(m_LogicalDevice, m_GraphicsCommandPool, nullptr);
   /* Compute */
-  if (m_ComputePipelineStorageBuffer.Handle)
-    vkDestroyBuffer(m_LogicalDevice, m_ComputePipelineStorageBuffer.Handle,
-                    nullptr);
-
-  if (m_ComputePipelineStorageBuffer.DeviceMemory)
-    vkFreeMemory(m_LogicalDevice, m_ComputePipelineStorageBuffer.DeviceMemory,
-                 nullptr);
+  m_ComputePipelineStorageBuffer.reset();
 
   if (m_ComputePipeline)
     vkDestroyPipeline(m_LogicalDevice, m_ComputePipeline, nullptr);
@@ -871,211 +852,79 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
 
   const std::array<uint32_t, 6ull> fullscreenQuadIndices{0, 1, 2, 2, 3, 0};
 
-  m_VertexBuffer.CPUData.resize(vertexBufferSize);
-  memcpy(m_VertexBuffer.CPUData.data(), fullscreenQuadVertices.data(),
-         vertexBufferSize);
+  const single_time_command_context uploadContext{
+      .device{m_LogicalDevice},
+      .command_pool{m_GraphicsCommandPool},
+      .queue{m_GraphicsQueue}};
 
-  m_IndexBuffer.CPUData.resize(indexBufferSize);
-  memcpy(m_IndexBuffer.CPUData.data(), fullscreenQuadIndices.data(),
-         indexBufferSize);
-
-  /* Vertex Staging Buffer */
   {
-    VkBuffer vertexStagingBuffer;
-    VkDeviceMemory vertexStagingBufferMemory;
+    auto staging{vulkan_buffer::create(
+        {.size{vertexBufferSize},
+         .device{m_LogicalDevice},
+         .physical_device{m_PhysicalDevice},
+         .usage{VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
+         .memory_flags{VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}})};
 
-    VkBufferCreateInfo vertexStagingBufferCreateInfo;
-    vertexStagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vertexStagingBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    vertexStagingBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    vertexStagingBufferCreateInfo.queueFamilyIndexCount =
-        VK_QUEUE_FAMILY_IGNORED;
-    vertexStagingBufferCreateInfo.pQueueFamilyIndices = nullptr;
-    vertexStagingBufferCreateInfo.size = vertexBufferSize;
-    vertexStagingBufferCreateInfo.flags = 0;
-    vertexStagingBufferCreateInfo.pNext = nullptr;
-
-    VK_CHECK(vkCreateBuffer(m_LogicalDevice, &vertexStagingBufferCreateInfo,
-                            nullptr, &vertexStagingBuffer));
-
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(m_LogicalDevice, vertexStagingBuffer,
-                                  &memoryRequirements);
-
-    VkMemoryAllocateInfo allocateInfo;
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
-        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    allocateInfo.pNext = nullptr;
-
-    vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
-                     &vertexStagingBufferMemory);
-
-    vkBindBufferMemory(m_LogicalDevice, vertexStagingBuffer,
-                       vertexStagingBufferMemory, 0);
-
-    void *data;
-    vkMapMemory(m_LogicalDevice, vertexStagingBufferMemory, 0, vertexBufferSize,
-                0, &data);
-    memcpy(data, m_VertexBuffer.CPUData.data(), vertexBufferSize);
-    vkUnmapMemory(m_LogicalDevice, vertexStagingBufferMemory);
-    /* Vertex Staging Buffer */
-
-    VkBufferCreateInfo vertexBufferCreateInfo;
-    vertexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vertexBufferCreateInfo.usage =
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    vertexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    vertexBufferCreateInfo.queueFamilyIndexCount = VK_QUEUE_FAMILY_IGNORED;
-    vertexBufferCreateInfo.pQueueFamilyIndices = nullptr;
-    vertexBufferCreateInfo.size = vertexBufferSize;
-    vertexBufferCreateInfo.flags = 0;
-    vertexBufferCreateInfo.pNext = nullptr;
-
-    VK_CHECK(vkCreateBuffer(m_LogicalDevice, &vertexBufferCreateInfo, nullptr,
-                            &m_VertexBuffer.Handle));
-
-    vkGetBufferMemoryRequirements(m_LogicalDevice, m_VertexBuffer.Handle,
-                                  &memoryRequirements);
-
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
-        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    allocateInfo.pNext = nullptr;
-
-    vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
-                     &m_VertexBuffer.DeviceMemory);
-
-    vkBindBufferMemory(m_LogicalDevice, m_VertexBuffer.Handle,
-                       m_VertexBuffer.DeviceMemory, 0);
-
-    const single_time_command_context context{
-        .device{m_LogicalDevice},
-        .command_pool{m_GraphicsCommandPool},
-        .queue{m_GraphicsQueue}};
-
-    const auto commandBuffer{begin_single_time_commands(context)};
-    if (!commandBuffer) {
+    if (!staging) {
       return false;
     }
 
-    VkBufferCopy bufferCopyRegion;
-    bufferCopyRegion.size = vertexBufferSize;
-    bufferCopyRegion.srcOffset = 0;
-    bufferCopyRegion.dstOffset = 0;
-
-    vkCmdCopyBuffer(*commandBuffer, vertexStagingBuffer, m_VertexBuffer.Handle,
-                    1, &bufferCopyRegion);
-    if (!end_single_time_commands(context, *commandBuffer)) {
+    if (!staging->write(std::as_bytes(std::span{fullscreenQuadVertices}))) {
       return false;
     }
 
-    vkFreeMemory(m_LogicalDevice, vertexStagingBufferMemory, nullptr);
+    auto vertexBuffer{vulkan_buffer::create(
+        {.size{vertexBufferSize},
+         .device{m_LogicalDevice},
+         .physical_device{m_PhysicalDevice},
+         .usage{VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+         .memory_flags{VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT}})};
 
-    vkDestroyBuffer(m_LogicalDevice, vertexStagingBuffer, nullptr);
+    if (!vertexBuffer) {
+      return false;
+    }
+
+    if (!copy_buffer(uploadContext, staging->handle(), vertexBuffer->handle(),
+                     vertexBufferSize)) {
+      return false;
+    }
+
+    m_VertexBuffer.emplace(std::move(*vertexBuffer));
   }
 
-  /* Index staging buffer*/
   {
-    VkBuffer stagingIndexBuffer;
-    VkDeviceMemory stagingIndexBufferMemory;
-
-    VkBufferCreateInfo stagingIndexBufferCreateInfo;
-    stagingIndexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    stagingIndexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    stagingIndexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    stagingIndexBufferCreateInfo.queueFamilyIndexCount =
-        VK_QUEUE_FAMILY_IGNORED;
-    stagingIndexBufferCreateInfo.pQueueFamilyIndices = nullptr;
-    stagingIndexBufferCreateInfo.size = indexBufferSize;
-    stagingIndexBufferCreateInfo.flags = 0;
-    stagingIndexBufferCreateInfo.pNext = nullptr;
-
-    VK_CHECK(vkCreateBuffer(m_LogicalDevice, &stagingIndexBufferCreateInfo,
-                            nullptr, &stagingIndexBuffer));
-
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(m_LogicalDevice, stagingIndexBuffer,
-                                  &memoryRequirements);
-
-    VkMemoryAllocateInfo allocateInfo;
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
-        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    allocateInfo.pNext = nullptr;
-
-    VK_CHECK(vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
-                              &stagingIndexBufferMemory));
-
-    vkBindBufferMemory(m_LogicalDevice, stagingIndexBuffer,
-                       stagingIndexBufferMemory, 0);
-
-    void *data;
-    vkMapMemory(m_LogicalDevice, stagingIndexBufferMemory, 0, vertexBufferSize,
-                0, &data);
-    memcpy(data, m_IndexBuffer.CPUData.data(), indexBufferSize);
-    vkUnmapMemory(m_LogicalDevice, stagingIndexBufferMemory);
-
-    VkBufferCreateInfo indexBufferCreateInfo;
-    indexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    indexBufferCreateInfo.usage =
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    indexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    indexBufferCreateInfo.queueFamilyIndexCount = VK_QUEUE_FAMILY_IGNORED;
-    indexBufferCreateInfo.pQueueFamilyIndices = nullptr;
-    indexBufferCreateInfo.size = indexBufferSize;
-    indexBufferCreateInfo.flags = 0;
-    indexBufferCreateInfo.pNext = nullptr;
-
-    VK_CHECK(vkCreateBuffer(m_LogicalDevice, &indexBufferCreateInfo, nullptr,
-                            &m_IndexBuffer.Handle));
-
-    vkGetBufferMemoryRequirements(m_LogicalDevice, m_IndexBuffer.Handle,
-                                  &memoryRequirements);
-
-    allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = retrieve_memory_type_index(
-        m_PhysicalDevice, memoryRequirements.memoryTypeBits,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    allocateInfo.pNext = nullptr;
-
-    VK_CHECK(vkAllocateMemory(m_LogicalDevice, &allocateInfo, nullptr,
-                              &m_IndexBuffer.DeviceMemory));
-
-    vkBindBufferMemory(m_LogicalDevice, m_IndexBuffer.Handle,
-                       m_IndexBuffer.DeviceMemory, 0);
-
-    const single_time_command_context context{
-        .device{m_LogicalDevice},
-        .command_pool{m_GraphicsCommandPool},
-        .queue{m_GraphicsQueue}};
-
-    const auto commandBuffer{begin_single_time_commands(context)};
-    if (!commandBuffer) {
+    auto staging{vulkan_buffer::create(
+        {.size{indexBufferSize},
+         .device{m_LogicalDevice},
+         .physical_device{m_PhysicalDevice},
+         .usage{VK_BUFFER_USAGE_TRANSFER_SRC_BIT},
+         .memory_flags{VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}})};
+    if (!staging) {
       return false;
     }
 
-    VkBufferCopy bufferCopyRegion;
-    bufferCopyRegion.size = indexBufferSize;
-    bufferCopyRegion.srcOffset = 0;
-    bufferCopyRegion.dstOffset = 0;
-
-    vkCmdCopyBuffer(*commandBuffer, stagingIndexBuffer, m_IndexBuffer.Handle, 1,
-                    &bufferCopyRegion);
-    if (!end_single_time_commands(context, *commandBuffer)) {
+    if (!staging->write(std::as_bytes(std::span{fullscreenQuadIndices}))) {
       return false;
     }
 
-    vkFreeMemory(m_LogicalDevice, stagingIndexBufferMemory, nullptr);
+    auto indexBuffer{vulkan_buffer::create(
+        {.size{indexBufferSize},
+         .device{m_LogicalDevice},
+         .physical_device{m_PhysicalDevice},
+         .usage{VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT},
+         .memory_flags{VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT}})};
+    if (!indexBuffer) {
+      return false;
+    }
 
-    vkDestroyBuffer(m_LogicalDevice, stagingIndexBuffer, nullptr);
+    if (!copy_buffer(uploadContext, staging->handle(), indexBuffer->handle(),
+                     indexBufferSize)) {
+      return false;
+    }
+
+    m_IndexBuffer.emplace(std::move(*indexBuffer));
   }
 
   /* TODO: Add support for doubles */
@@ -1340,38 +1189,18 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
       m_LogicalDevice, &colorPalleteImageDescriptorSetAllocateInfo,
       &m_GraphicsPipelineColorPaletteDescriptorSet));
 
-  VkBufferCreateInfo uboBufferCreateInfo;
-  uboBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  uboBufferCreateInfo.size = sizeof(UBO);
-  uboBufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-  uboBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  uboBufferCreateInfo.queueFamilyIndexCount = VK_QUEUE_FAMILY_IGNORED;
-  uboBufferCreateInfo.pQueueFamilyIndices = nullptr;
-  uboBufferCreateInfo.flags = 0;
-  uboBufferCreateInfo.pNext = nullptr;
+  auto uboBuffer{vulkan_buffer::create(
+      {.size{sizeof(UBO)},
+       .device{m_LogicalDevice},
+       .physical_device{m_PhysicalDevice},
+       .usage{VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
+       .memory_flags{VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}})};
+  if (!uboBuffer) {
+    return false;
+  }
 
-  VK_CHECK(vkCreateBuffer(m_LogicalDevice, &uboBufferCreateInfo, nullptr,
-                          &m_UBOBuffer.Handle));
-
-  VkMemoryRequirements uboBufferMemoryRequirements;
-  vkGetBufferMemoryRequirements(m_LogicalDevice, m_UBOBuffer.Handle,
-                                &uboBufferMemoryRequirements);
-
-  VkMemoryAllocateInfo uboBufferMemoryAllocationInfo;
-  uboBufferMemoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  uboBufferMemoryAllocationInfo.allocationSize =
-      uboBufferMemoryRequirements.size;
-  uboBufferMemoryAllocationInfo.memoryTypeIndex = retrieve_memory_type_index(
-      m_PhysicalDevice, uboBufferMemoryRequirements.memoryTypeBits,
-      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-  uboBufferMemoryAllocationInfo.pNext = nullptr;
-
-  VK_CHECK(vkAllocateMemory(m_LogicalDevice, &uboBufferMemoryAllocationInfo,
-                            nullptr, &m_UBOBuffer.DeviceMemory));
-
-  vkBindBufferMemory(m_LogicalDevice, m_UBOBuffer.Handle,
-                     m_UBOBuffer.DeviceMemory, 0);
+  m_UBOBuffer.emplace(std::move(*uboBuffer));
 
   VkWriteDescriptorSet colorPalleteDescriptorSetWrite{};
   colorPalleteDescriptorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1390,16 +1219,14 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   vkUpdateDescriptorSets(m_LogicalDevice, 1, &colorPalleteDescriptorSetWrite, 0,
                          nullptr);
 
-  auto temporary = glm::mat4(1.0f);
-
-  void *data;
-  vkMapMemory(m_LogicalDevice, m_UBOBuffer.DeviceMemory, 0, sizeof(UBO), 0,
-              &data);
-  memcpy(data, &temporary, sizeof(UBO));
-  vkUnmapMemory(m_LogicalDevice, m_UBOBuffer.DeviceMemory);
+  const auto temporary = glm::mat4(1.0f);
+  if (!m_UBOBuffer->write(
+          std::as_bytes(std::span{&temporary, 1}).first(sizeof(UBO)))) {
+    return false;
+  }
 
   VkDescriptorBufferInfo bufferInfo;
-  bufferInfo.buffer = m_UBOBuffer.Handle;
+  bufferInfo.buffer = m_UBOBuffer->handle();
   bufferInfo.range = sizeof(UBO);
   bufferInfo.offset = 0;
 
@@ -1456,42 +1283,18 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
 }
 
 bool VulkanApp::CreateComputeBasedPipeline() {
-  VkBufferCreateInfo bufferCreateInfo;
-  bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-  bufferCreateInfo.size = Utilities::ComputeBufferSize;
-  bufferCreateInfo.queueFamilyIndexCount = VK_QUEUE_FAMILY_IGNORED;
-  bufferCreateInfo.pQueueFamilyIndices = nullptr;
-  bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  bufferCreateInfo.flags = 0;
-  bufferCreateInfo.pNext = nullptr;
+  auto storageBuffer{vulkan_buffer::create(
+      {.size{Utilities::ComputeBufferSize},
+       .device{m_LogicalDevice},
+       .physical_device{m_PhysicalDevice},
+       .usage{VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
+       .memory_flags{VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}})};
+  if (!storageBuffer) {
+    return false;
+  }
 
-  VK_CHECK(vkCreateBuffer(m_LogicalDevice, &bufferCreateInfo, nullptr,
-                          &m_ComputePipelineStorageBuffer.Handle));
-
-  VkMemoryRequirements storageBufferMemoryRequirements;
-  vkGetBufferMemoryRequirements(m_LogicalDevice,
-                                m_ComputePipelineStorageBuffer.Handle,
-                                &storageBufferMemoryRequirements);
-
-  VkMemoryAllocateInfo storageBufferMemoryAllocateInfo;
-  storageBufferMemoryAllocateInfo.sType =
-      VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  storageBufferMemoryAllocateInfo.allocationSize =
-      storageBufferMemoryRequirements.size;
-  storageBufferMemoryAllocateInfo.memoryTypeIndex = retrieve_memory_type_index(
-      m_PhysicalDevice, storageBufferMemoryRequirements.memoryTypeBits,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  storageBufferMemoryAllocateInfo.pNext = nullptr;
-
-  VK_CHECK(vkAllocateMemory(m_LogicalDevice, &storageBufferMemoryAllocateInfo,
-                            nullptr,
-                            &m_ComputePipelineStorageBuffer.DeviceMemory));
-
-  VK_CHECK(vkBindBufferMemory(m_LogicalDevice,
-                              m_ComputePipelineStorageBuffer.Handle,
-                              m_ComputePipelineStorageBuffer.DeviceMemory, 0));
+  m_ComputePipelineStorageBuffer.emplace(std::move(*storageBuffer));
 
   m_ComputeShaderModule =
       CreateShaderModule("assets/shaders/computeShader.spv");
@@ -1572,7 +1375,7 @@ bool VulkanApp::CreateComputeBasedPipeline() {
                                &m_ComputePipelineStorageBufferDescriptorSet));
 
   VkDescriptorBufferInfo bufferInfo;
-  bufferInfo.buffer = m_ComputePipelineStorageBuffer.Handle;
+  bufferInfo.buffer = m_ComputePipelineStorageBuffer->handle();
   bufferInfo.range = Utilities::ComputeBufferSize;
   bufferInfo.offset = 0;
 
@@ -1655,6 +1458,10 @@ bool VulkanApp::AllocateComputeCommandBuffers() {
 }
 
 bool VulkanApp::RecordGraphicsCommandBuffers() {
+  if (!m_VertexBuffer.has_value() || !m_IndexBuffer.has_value()) {
+    return false;
+  }
+
   for (uint32_t i = 0; i < m_ImageCount; ++i) {
     VkCommandBuffer &commandBuffer = m_GraphicsPipelineCommandBuffers[i];
     VkCommandBufferBeginInfo commandBufferBeginInfo;
@@ -1698,10 +1505,11 @@ bool VulkanApp::RecordGraphicsCommandBuffers() {
                          VK_SUBPASS_CONTENTS_INLINE);
 
     constexpr std::array<VkDeviceSize, 1ull> offsets{0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.Handle,
+    const VkBuffer vertexBufferHandle{m_VertexBuffer->handle()};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferHandle,
                            offsets.data());
 
-    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.Handle, 0,
+    vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->handle(), 0,
                          VK_INDEX_TYPE_UINT32);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1823,14 +1631,13 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
   ubo.ZoomScale = zoomScale;
   ubo.AspectRatio = aspectRatio;
 
-  void *data;
-  vkMapMemory(m_LogicalDevice, m_UBOBuffer.DeviceMemory, 0, sizeof(UBO), 0,
-              &data);
-  memcpy(data, &ubo, sizeof(UBO));
-  vkUnmapMemory(m_LogicalDevice, m_UBOBuffer.DeviceMemory);
+  if (!m_UBOBuffer.has_value() ||
+      !m_UBOBuffer->write(std::as_bytes(std::span{&ubo, 1}))) {
+    return;
+  }
 
   VkDescriptorBufferInfo bufferInfo;
-  bufferInfo.buffer = m_UBOBuffer.Handle;
+  bufferInfo.buffer = m_UBOBuffer->handle();
   bufferInfo.range = sizeof(UBO);
   bufferInfo.offset = 0;
 
@@ -1865,19 +1672,23 @@ void VulkanApp::DrawFrame() {
     VK_CHECK(vkQueueSubmit(m_ComputeQueue, 1, &submitInfo, VK_NULL_HANDLE));
     VK_CHECK(vkQueueWaitIdle(m_ComputeQueue));
 
-    void *mappedMemory = nullptr;
-    vkMapMemory(m_LogicalDevice, m_ComputePipelineStorageBuffer.DeviceMemory, 0,
-                Utilities::ComputeBufferSize, 0, &mappedMemory);
-    auto pmappedMemory = reinterpret_cast<Pixel *>(mappedMemory);
+    std::vector<std::byte> pixelData(Utilities::ComputeBufferSize);
+    if (!m_ComputePipelineStorageBuffer.has_value() ||
+        !m_ComputePipelineStorageBuffer->read(pixelData)) {
+      std::println("Failed to read compute storage buffer");
+      return;
+    }
+    const auto *const pmappedMemory{
+        reinterpret_cast<const Pixel *>(pixelData.data())};
 
     std::vector<uint8_t> image;
     /* To prevent unnecessary vector buffer reallocations */
     image.reserve(Utilities::RenderedImageSize);
     for (uint32_t i = 0; i < Utilities::RenderedImageSize; i += 4) {
-      float pixelR = *reinterpret_cast<float *>(&pmappedMemory[i + 0]);
-      float pixelG = *reinterpret_cast<float *>(&pmappedMemory[i + 1]);
-      float pixelB = *reinterpret_cast<float *>(&pmappedMemory[i + 2]);
-      float pixelA = *reinterpret_cast<float *>(&pmappedMemory[i + 3]);
+      float pixelR = *reinterpret_cast<const float *>(&pmappedMemory[i + 0]);
+      float pixelG = *reinterpret_cast<const float *>(&pmappedMemory[i + 1]);
+      float pixelB = *reinterpret_cast<const float *>(&pmappedMemory[i + 2]);
+      float pixelA = *reinterpret_cast<const float *>(&pmappedMemory[i + 3]);
 
       image.push_back(static_cast<uint8_t>(pixelR * 255.0f));
       image.push_back(static_cast<uint8_t>(pixelG * 255.0f));
@@ -1885,7 +1696,6 @@ void VulkanApp::DrawFrame() {
       image.push_back(static_cast<uint8_t>(pixelA * 255.0f));
     }
 
-    vkUnmapMemory(m_LogicalDevice, m_ComputePipelineStorageBuffer.DeviceMemory);
     const auto success =
         stbi_write_png("mandelbrot.png", Utilities::ComputeRenderWidth,
                        Utilities::ComputeRenderHeight, 4, image.data(),

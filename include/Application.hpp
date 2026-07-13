@@ -1,6 +1,7 @@
 #pragma once
 #include "include/VulkanTypes.hpp"
 #include "include/texture_2d.hpp"
+#include "include/vulkan_buffer.hpp"
 #include "include/window.hpp"
 #include <cstdint>
 #include <optional>
@@ -127,9 +128,9 @@ private:
 
   /* Pipelines*/
   /* Graphics Pipeline */
-  VulkanBuffer m_VertexBuffer;
-  VulkanBuffer m_IndexBuffer;
-  VulkanBuffer m_UBOBuffer;
+  std::optional<vulkan_buffer> m_VertexBuffer;
+  std::optional<vulkan_buffer> m_IndexBuffer;
+  std::optional<vulkan_buffer> m_UBOBuffer;
 
   VkShaderModule m_VertexShaderModule;
   VkShaderModule m_FragmentShaderModule;
@@ -145,7 +146,7 @@ private:
   std::vector<VkCommandBuffer> m_GraphicsPipelineCommandBuffers;
 
   /* Compute Pipeline */
-  VulkanBuffer m_ComputePipelineStorageBuffer;
+  std::optional<vulkan_buffer> m_ComputePipelineStorageBuffer;
 
   VkShaderModule m_ComputeShaderModule;
   VkDescriptorSetLayout m_ComputePipelineDescriptorSetLayout;

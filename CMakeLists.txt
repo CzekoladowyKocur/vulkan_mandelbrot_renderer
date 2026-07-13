@@ -36,6 +36,7 @@ add_executable(vulkan_mandelbrot_renderer
 	src/image_2d.cpp
 	src/input.cpp
 	src/texture_2d.cpp
+	src/vulkan_buffer.cpp
 	src/LibraryBuild.cpp
 	src/Main.cpp
 	src/platform/win32/window_win32.cpp
