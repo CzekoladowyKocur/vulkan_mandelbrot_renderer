@@ -257,30 +257,25 @@ bool realtime_mandelbrot_application::create_swapchain() {
                       ? (min_image_count + 1)
                       : max_image_count;
 
-  VkSwapchainCreateInfoKHR swapchain_create_info;
-  swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  swapchain_create_info.surface = m_surface;
-  swapchain_create_info.imageFormat = m_surface_format.format;
-  swapchain_create_info.imageColorSpace = m_surface_format.colorSpace;
-  swapchain_create_info.presentMode = m_present_mode;
-  swapchain_create_info.imageExtent = m_swapchain_extent;
-  swapchain_create_info.minImageCount = m_image_count;
-  swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-  swapchain_create_info.queueFamilyIndexCount =
-      0; // queuesShared ? 0 : 2; /* One for graphics and one for present if not
-         // shared */
-  swapchain_create_info.pQueueFamilyIndices =
-      nullptr; // queuesShared ? nullptr : queueFamilyIndices;
-  swapchain_create_info.imageSharingMode =
-      VK_SHARING_MODE_EXCLUSIVE; // queuesShared ? VK_SHARING_MODE_EXCLUSIVE :
-                                 // VK_SHARING_MODE_CONCURRENT;
-  swapchain_create_info.clipped = VK_TRUE;
-  swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  swapchain_create_info.imageArrayLayers = 1;
-  swapchain_create_info.preTransform = m_surface_capabilities.currentTransform;
-  swapchain_create_info.oldSwapchain = VK_NULL_HANDLE;
-  swapchain_create_info.flags = 0;
-  swapchain_create_info.pNext = nullptr;
+  const VkSwapchainCreateInfoKHR swapchain_create_info{
+      .sType{VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR},
+      .pNext{nullptr},
+      .flags{},
+      .surface{m_surface},
+      .minImageCount{m_image_count},
+      .imageFormat{m_surface_format.format},
+      .imageColorSpace{m_surface_format.colorSpace},
+      .imageExtent{m_swapchain_extent},
+      .imageArrayLayers{1u},
+      .imageUsage{VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT},
+      .imageSharingMode{VK_SHARING_MODE_EXCLUSIVE},
+      .queueFamilyIndexCount{},
+      .pQueueFamilyIndices{nullptr},
+      .preTransform{m_surface_capabilities.currentTransform},
+      .compositeAlpha{VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR},
+      .presentMode{m_present_mode},
+      .clipped{VK_TRUE},
+      .oldSwapchain{VK_NULL_HANDLE}};
 
   if (vkCreateSwapchainKHR(m_context.device(), &swapchain_create_info, nullptr,
                            &m_swapchain) != VK_SUCCESS) {
@@ -300,94 +295,88 @@ bool realtime_mandelbrot_application::create_swapchain() {
   VK_CHECK(vkGetSwapchainImagesKHR(m_context.device(), m_swapchain,
                                    &m_image_count, m_swapchain_images.data()));
 
-  VkAttachmentDescription color_attachment;
-  color_attachment.format = m_surface_format.format;
-  color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-  color_attachment.flags = 0;
+  const VkAttachmentDescription color_attachment{
+      .flags{},
+      .format{m_surface_format.format},
+      .samples{VK_SAMPLE_COUNT_1_BIT},
+      .loadOp{VK_ATTACHMENT_LOAD_OP_CLEAR},
+      .storeOp{VK_ATTACHMENT_STORE_OP_STORE},
+      .stencilLoadOp{VK_ATTACHMENT_LOAD_OP_DONT_CARE},
+      .stencilStoreOp{VK_ATTACHMENT_STORE_OP_DONT_CARE},
+      .initialLayout{VK_IMAGE_LAYOUT_UNDEFINED},
+      .finalLayout{VK_IMAGE_LAYOUT_PRESENT_SRC_KHR}};
 
-  VkAttachmentReference color_attachment_reference;
-  color_attachment_reference.attachment = 0;
-  color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  const VkAttachmentReference color_attachment_reference{
+      .attachment{}, .layout{VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
 
-  VkSubpassDescription subpass_description;
-  subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass_description.colorAttachmentCount = 1;
-  subpass_description.pColorAttachments = &color_attachment_reference;
-  subpass_description.inputAttachmentCount = 0;
-  subpass_description.pInputAttachments = nullptr;
-  subpass_description.preserveAttachmentCount = 0;
-  subpass_description.pPreserveAttachments = nullptr;
-  subpass_description.pResolveAttachments = nullptr;
-  subpass_description.pDepthStencilAttachment = nullptr;
-  subpass_description.flags = 0;
+  const VkSubpassDescription subpass_description{
+      .flags{},
+      .pipelineBindPoint{VK_PIPELINE_BIND_POINT_GRAPHICS},
+      .inputAttachmentCount{},
+      .pInputAttachments{nullptr},
+      .colorAttachmentCount{1u},
+      .pColorAttachments{&color_attachment_reference},
+      .pResolveAttachments{nullptr},
+      .pDepthStencilAttachment{nullptr},
+      .preserveAttachmentCount{},
+      .pPreserveAttachments{nullptr}};
 
-  VkSubpassDependency subpass_dependency;
-  subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-  subpass_dependency.dstSubpass = 0; /* What subpass we are writing to */
-  subpass_dependency.srcStageMask =
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  subpass_dependency.srcAccessMask = 0;
-  subpass_dependency.dstStageMask =
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  subpass_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-  subpass_dependency.dependencyFlags = 0;
+  const VkSubpassDependency subpass_dependency{
+      .srcSubpass{VK_SUBPASS_EXTERNAL},
+      .dstSubpass{},
+      .srcStageMask{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+      .dstStageMask{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+      .srcAccessMask{},
+      .dstAccessMask{VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT},
+      .dependencyFlags{}};
 
-  const std::array<VkAttachmentDescription, 1> attachments = {color_attachment};
-  VkRenderPassCreateInfo render_pass_create_info;
-  render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_create_info.attachmentCount =
-      static_cast<uint32_t>(attachments.size());
-  render_pass_create_info.pAttachments = attachments.data();
-  render_pass_create_info.dependencyCount = 1;
-  render_pass_create_info.pDependencies = &subpass_dependency;
-  render_pass_create_info.subpassCount = 1;
-  render_pass_create_info.pSubpasses = &subpass_description;
-  render_pass_create_info.flags = 0;
-  render_pass_create_info.pNext = nullptr;
+  const std::array<VkAttachmentDescription, 1> attachments{color_attachment};
+  const VkRenderPassCreateInfo render_pass_create_info{
+      .sType{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .attachmentCount{static_cast<uint32_t>(attachments.size())},
+      .pAttachments{attachments.data()},
+      .subpassCount{1u},
+      .pSubpasses{&subpass_description},
+      .dependencyCount{1u},
+      .pDependencies{&subpass_dependency}};
 
   VK_CHECK(vkCreateRenderPass(m_context.device(), &render_pass_create_info,
                               nullptr, &m_swapchain_render_pass));
 
   uint32_t image_index = 0;
   for (const VkImage image : m_swapchain_images) {
-    VkImageViewCreateInfo image_view_create_info;
-    image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    image_view_create_info.image = image;
-    image_view_create_info.format = m_surface_format.format;
-    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_R;
-    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_G;
-    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_B;
-    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_A;
-    image_view_create_info.subresourceRange.aspectMask =
-        VK_IMAGE_ASPECT_COLOR_BIT;
-    image_view_create_info.subresourceRange.layerCount = 1;
-    image_view_create_info.subresourceRange.baseArrayLayer = 0;
-    image_view_create_info.subresourceRange.levelCount = 1;
-    image_view_create_info.subresourceRange.baseMipLevel = 0;
-    image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    image_view_create_info.flags = 0;
-    image_view_create_info.pNext = nullptr;
+    const VkImageViewCreateInfo image_view_create_info{
+        .sType{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO},
+        .pNext{nullptr},
+        .flags{},
+        .image{image},
+        .viewType{VK_IMAGE_VIEW_TYPE_2D},
+        .format{m_surface_format.format},
+        .components{.r{VK_COMPONENT_SWIZZLE_R},
+                    .g{VK_COMPONENT_SWIZZLE_G},
+                    .b{VK_COMPONENT_SWIZZLE_B},
+                    .a{VK_COMPONENT_SWIZZLE_A}},
+        .subresourceRange{.aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
+                          .baseMipLevel{},
+                          .levelCount{1u},
+                          .baseArrayLayer{},
+                          .layerCount{1u}}};
 
     VK_CHECK(vkCreateImageView(m_context.device(), &image_view_create_info,
                                nullptr, &m_swapchain_image_views[image_index]));
 
-    VkFramebufferCreateInfo framebuffer_create_info;
-    framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebuffer_create_info.renderPass = m_swapchain_render_pass;
-    framebuffer_create_info.width = m_swapchain_extent.width;
-    framebuffer_create_info.height = m_swapchain_extent.height;
-    framebuffer_create_info.attachmentCount = 1;
-    framebuffer_create_info.pAttachments =
-        &m_swapchain_image_views[image_index];
-    framebuffer_create_info.layers = 1;
-    framebuffer_create_info.flags = 0;
-    framebuffer_create_info.pNext = nullptr;
+    const VkFramebufferCreateInfo framebuffer_create_info{
+        .sType{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO},
+        .pNext{nullptr},
+        .flags{},
+        .renderPass{m_swapchain_render_pass},
+        .attachmentCount{1u},
+        .pAttachments{&m_swapchain_image_views[image_index]},
+        .width{m_swapchain_extent.width},
+        .height{m_swapchain_extent.height},
+        .layers{1u}};
 
     VK_CHECK(vkCreateFramebuffer(m_context.device(), &framebuffer_create_info,
                                  nullptr,
@@ -396,15 +385,15 @@ bool realtime_mandelbrot_application::create_swapchain() {
     ++image_index;
   }
 
-  VkSemaphoreCreateInfo semaphore_create_info;
-  semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  semaphore_create_info.flags = VK_SEMAPHORE_TYPE_BINARY;
-  semaphore_create_info.pNext = nullptr;
+  const VkSemaphoreCreateInfo semaphore_create_info{
+      .sType{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{}};
 
-  VkFenceCreateInfo fence_create_info;
-  fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-  fence_create_info.pNext = nullptr;
+  const VkFenceCreateInfo fence_create_info{
+      .sType{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{VK_FENCE_CREATE_SIGNALED_BIT}};
 
   m_semaphores.present_complete.resize(m_max_frames_in_flight);
   m_semaphores.render_complete.resize(m_max_frames_in_flight);
