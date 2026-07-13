@@ -11,16 +11,6 @@
 
 class VulkanApp {
 public:
-  enum class ERenderMethod : std::uint8_t {
-    Graphics,
-    Compute,
-    Default = Graphics,
-  };
-
-public:
-  explicit VulkanApp(const ERenderMethod renderMethod);
-  ~VulkanApp();
-
   bool Initialize();
   bool Run();
   bool Shutdown();
@@ -34,20 +24,14 @@ private:
   bool LoadAssets();
 
   bool CreateGraphicsBasedPipeline();
-  bool CreateComputeBasedPipeline();
   bool AllocateGraphicsCommandBuffers();
-  bool AllocateComputeCommandBuffers();
   bool RecordGraphicsCommandBuffers();
-  bool RecordComputeCommandBuffers();
 
   void UpdateFrameData(const float deltaTime);
   void DrawFrame();
   /* Swapchain */
   void RecreateSwapchain(const uint32_t width, const uint32_t height);
   void CleanupSwapchain();
-  /* Pipeline */
-  [[nodiscard]] VkShaderModule
-  CreateShaderModule(const std::string_view filepath) const;
 
 private:
   struct UBO {
@@ -63,7 +47,6 @@ private:
   };
 
 private:
-  ERenderMethod m_RenderMethod{ERenderMethod::Default};
   bool m_Running{true};
   std::optional<window> m_window;
   input m_input;
@@ -119,18 +102,6 @@ private:
   VkDescriptorSet m_GraphicsPipelineColorPaletteDescriptorSet{VK_NULL_HANDLE};
   std::vector<VkCommandBuffer> m_GraphicsPipelineCommandBuffers;
 
-  /* Compute Pipeline */
-  std::optional<vulkan_buffer> m_ComputePipelineStorageBuffer;
-
-  VkShaderModule m_ComputeShaderModule{VK_NULL_HANDLE};
-  VkDescriptorSetLayout m_ComputePipelineDescriptorSetLayout{VK_NULL_HANDLE};
-  VkDescriptorPool m_ComputePipelineDescriptorPool{VK_NULL_HANDLE};
-  VkDescriptorSet m_ComputePipelineStorageBufferDescriptorSet{VK_NULL_HANDLE};
-
-  VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
-  VkPipelineLayout m_ComputePipelineLayout{VK_NULL_HANDLE};
-
-  VkCommandBuffer m_ComputePipelineCommandBuffer{VK_NULL_HANDLE};
   /* Swapchain synchronization */
   uint32_t m_ImageIndex{};
   uint32_t m_FrameIndex{};

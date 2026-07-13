@@ -1,6 +1,7 @@
 #include "include/vulkan_context.hpp"
 #include <array>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <print>
 #include <utility>
@@ -468,4 +469,42 @@ VkCommandPool vulkan_context::graphics_command_pool() const noexcept {
 
 VkCommandPool vulkan_context::compute_command_pool() const noexcept {
   return m_compute_command_pool;
+}
+
+std::expected<VkShaderModule, std::error_code>
+create_shader_module(const VkDevice device,
+                     const std::filesystem::path &path) noexcept {
+  try {
+    std::ifstream file{path, std::ios::ate | std::ios::binary};
+    if (!file.is_open()) {
+      return std::unexpected(
+          std::make_error_code(std::errc::no_such_file_or_directory));
+    }
+
+    const std::streampos file_size{file.tellg()};
+    std::vector<char> code(static_cast<std::size_t>(file_size));
+    file.seekg(std::ios::beg);
+    file.read(code.data(), static_cast<std::streamsize>(file_size));
+    if (!file) {
+      return std::unexpected(std::make_error_code(std::errc::io_error));
+    }
+
+    const VkShaderModuleCreateInfo shader_module_create_info{
+        .sType{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO},
+        .pNext{nullptr},
+        .flags{},
+        .codeSize{code.size()},
+        .pCode{reinterpret_cast<const std::uint32_t *>(code.data())}};
+
+    VkShaderModule shader_module{VK_NULL_HANDLE};
+    if (const VkResult result{vkCreateShaderModule(
+            device, &shader_module_create_info, nullptr, &shader_module)};
+        result != VK_SUCCESS) {
+      return make_vulkan_error(result);
+    }
+
+    return shader_module;
+  } catch (...) {
+    return std::unexpected(std::make_error_code(std::errc::io_error));
+  }
 }
