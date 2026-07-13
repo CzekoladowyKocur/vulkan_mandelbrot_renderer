@@ -45,17 +45,17 @@
 
   const auto application{std::make_unique<realtime_mandelbrot_application>()};
 
-  if (!application->Initialize()) {
+  if (!application->initialize()) {
     std::println("Failed to initialize application");
     return EXIT_FAILURE;
   }
 
-  if (!application->Run()) {
+  if (!application->run()) {
     std::println("Failed to run application properly");
     return EXIT_FAILURE;
   }
 
-  if (!application->Shutdown()) {
+  if (!application->shutdown()) {
     std::println("Failed to shutdown application properly");
     return EXIT_FAILURE;
   }
