@@ -544,143 +544,141 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
   }
   m_fragment_shader_module = *fragment_shader_module;
 
-  VkPipelineShaderStageCreateInfo vertex_shader_stage_info;
-  vertex_shader_stage_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  vertex_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-  vertex_shader_stage_info.module = m_vertex_shader_module;
-  vertex_shader_stage_info.pName = "main";
-  vertex_shader_stage_info.pSpecializationInfo = nullptr;
-  vertex_shader_stage_info.flags = 0;
-  vertex_shader_stage_info.pNext = nullptr;
+  const VkPipelineShaderStageCreateInfo vertex_shader_stage_info{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .stage{VK_SHADER_STAGE_VERTEX_BIT},
+      .module{m_vertex_shader_module},
+      .pName{"main"},
+      .pSpecializationInfo{nullptr}};
 
-  VkPipelineShaderStageCreateInfo fragment_shader_stage_info;
-  fragment_shader_stage_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  fragment_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-  fragment_shader_stage_info.module = m_fragment_shader_module;
-  fragment_shader_stage_info.pName = "main";
-  fragment_shader_stage_info.pSpecializationInfo = nullptr;
-  fragment_shader_stage_info.flags = 0;
-  fragment_shader_stage_info.pNext = nullptr;
+  const VkPipelineShaderStageCreateInfo fragment_shader_stage_info{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .stage{VK_SHADER_STAGE_FRAGMENT_BIT},
+      .module{m_fragment_shader_module},
+      .pName{"main"},
+      .pSpecializationInfo{nullptr}};
 
   const std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages{
       vertex_shader_stage_info, fragment_shader_stage_info};
-  VkVertexInputBindingDescription vertex_input_binding_description;
-  vertex_input_binding_description.binding = 0;
-  vertex_input_binding_description.stride = sizeof(float) * 3;
-  vertex_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-  VkVertexInputAttributeDescription vertex_input_attribute_description;
-  vertex_input_attribute_description.binding = 0;
-  vertex_input_attribute_description.location = 0;
-  vertex_input_attribute_description.offset = 0;
-  vertex_input_attribute_description.format = VK_FORMAT_R32G32B32_SFLOAT;
+  const VkVertexInputBindingDescription vertex_input_binding_description{
+      .binding{},
+      .stride{sizeof(float) * 3},
+      .inputRate{VK_VERTEX_INPUT_RATE_VERTEX}};
 
-  VkPipelineVertexInputStateCreateInfo vertex_input_info;
-  vertex_input_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertex_input_info.vertexBindingDescriptionCount = 1;
-  vertex_input_info.pVertexBindingDescriptions =
-      &vertex_input_binding_description;
-  vertex_input_info.vertexAttributeDescriptionCount = 1;
-  vertex_input_info.pVertexAttributeDescriptions =
-      &vertex_input_attribute_description;
-  vertex_input_info.flags = 0;
-  vertex_input_info.pNext = nullptr;
+  const VkVertexInputAttributeDescription vertex_input_attribute_description{
+      .location{}, .binding{}, .format{VK_FORMAT_R32G32B32_SFLOAT}, .offset{}};
 
-  VkPipelineInputAssemblyStateCreateInfo input_assembly;
-  input_assembly.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  input_assembly.primitiveRestartEnable = VK_FALSE;
-  input_assembly.flags = 0;
-  input_assembly.pNext = nullptr;
+  const VkPipelineVertexInputStateCreateInfo vertex_input_info{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .vertexBindingDescriptionCount{1u},
+      .pVertexBindingDescriptions{&vertex_input_binding_description},
+      .vertexAttributeDescriptionCount{1u},
+      .pVertexAttributeDescriptions{&vertex_input_attribute_description}};
 
-  VkViewport viewport;
-  viewport.width = static_cast<float>(m_swapchain_extent.width);
-  viewport.height = static_cast<float>(m_swapchain_extent.height);
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
+  const VkPipelineInputAssemblyStateCreateInfo input_assembly{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .topology{VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST},
+      .primitiveRestartEnable{VK_FALSE}};
 
-  VkRect2D scissor;
-  scissor.offset = {.x{0}, .y{0}};
-  scissor.extent = m_swapchain_extent;
-  VkPipelineViewportStateCreateInfo viewport_state;
-  viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewport_state.viewportCount = 1;
-  viewport_state.pViewports = &viewport;
-  viewport_state.scissorCount = 1;
-  viewport_state.pScissors = &scissor;
-  viewport_state.flags = 0;
-  viewport_state.pNext = nullptr;
+  const VkViewport viewport{
+      .x{0.0f},
+      .y{0.0f},
+      .width{static_cast<float>(m_swapchain_extent.width)},
+      .height{static_cast<float>(m_swapchain_extent.height)},
+      .minDepth{0.0f},
+      .maxDepth{1.0f}};
 
-  const std::array<VkDynamicState, 2> dynamic_states = {
-      VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-  VkPipelineDynamicStateCreateInfo dynamic_state_info;
-  dynamic_state_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-  dynamic_state_info.dynamicStateCount =
-      static_cast<uint32_t>(dynamic_states.size());
-  dynamic_state_info.pDynamicStates = dynamic_states.data();
-  dynamic_state_info.flags = 0;
-  dynamic_state_info.pNext = nullptr;
+  const VkRect2D scissor{.offset{.x{0}, .y{0}}, .extent{m_swapchain_extent}};
 
-  VkPipelineRasterizationStateCreateInfo rasterizer_state_info{};
-  rasterizer_state_info.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-  rasterizer_state_info.depthClampEnable = VK_FALSE;
-  rasterizer_state_info.rasterizerDiscardEnable = VK_FALSE;
-  rasterizer_state_info.polygonMode = VK_POLYGON_MODE_FILL;
-  rasterizer_state_info.lineWidth = 1.0f;
-  rasterizer_state_info.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer_state_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
-  rasterizer_state_info.depthBiasEnable = VK_FALSE;
-  rasterizer_state_info.flags = 0;
-  rasterizer_state_info.pNext = nullptr;
+  const VkPipelineViewportStateCreateInfo viewport_state{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .viewportCount{1u},
+      .pViewports{&viewport},
+      .scissorCount{1u},
+      .pScissors{&scissor}};
 
-  VkPipelineMultisampleStateCreateInfo multisampling{
+  const std::array<VkDynamicState, 2> dynamic_states{VK_DYNAMIC_STATE_VIEWPORT,
+                                                     VK_DYNAMIC_STATE_SCISSOR};
+  const VkPipelineDynamicStateCreateInfo dynamic_state_info{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .dynamicStateCount{static_cast<uint32_t>(dynamic_states.size())},
+      .pDynamicStates{dynamic_states.data()}};
+
+  const VkPipelineRasterizationStateCreateInfo rasterizer_state_info{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .depthClampEnable{VK_FALSE},
+      .rasterizerDiscardEnable{VK_FALSE},
+      .polygonMode{VK_POLYGON_MODE_FILL},
+      .cullMode{VK_CULL_MODE_BACK_BIT},
+      .frontFace{VK_FRONT_FACE_CLOCKWISE},
+      .depthBiasEnable{VK_FALSE},
+      .depthBiasConstantFactor{},
+      .depthBiasClamp{},
+      .depthBiasSlopeFactor{},
+      .lineWidth{1.0f}};
+
+  const VkPipelineMultisampleStateCreateInfo multisampling{
       .sType{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO},
-      .rasterizationSamples{VK_SAMPLE_COUNT_1_BIT}};
-  multisampling.sampleShadingEnable = VK_FALSE;
+      .pNext{nullptr},
+      .flags{},
+      .rasterizationSamples{VK_SAMPLE_COUNT_1_BIT},
+      .sampleShadingEnable{VK_FALSE},
+      .minSampleShading{},
+      .pSampleMask{nullptr},
+      .alphaToCoverageEnable{VK_FALSE},
+      .alphaToOneEnable{VK_FALSE}};
 
-  VkPipelineColorBlendAttachmentState color_blend_attachment{};
-  color_blend_attachment.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-  color_blend_attachment.blendEnable = VK_FALSE;
+  const VkPipelineColorBlendAttachmentState color_blend_attachment{
+      .blendEnable{VK_FALSE},
+      .srcColorBlendFactor{},
+      .dstColorBlendFactor{},
+      .colorBlendOp{},
+      .srcAlphaBlendFactor{},
+      .dstAlphaBlendFactor{},
+      .alphaBlendOp{},
+      .colorWriteMask{VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT}};
 
-  VkPipelineColorBlendStateCreateInfo color_blending{};
-  color_blending.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-  color_blending.logicOpEnable = VK_FALSE;
-  color_blending.logicOp = VK_LOGIC_OP_COPY;
-  color_blending.attachmentCount = 1;
-  color_blending.pAttachments = &color_blend_attachment;
-  color_blending.blendConstants[0] = 0.0f;
-  color_blending.blendConstants[1] = 0.0f;
-  color_blending.blendConstants[2] = 0.0f;
-  color_blending.blendConstants[3] = 0.0f;
+  const VkPipelineColorBlendStateCreateInfo color_blending{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .logicOpEnable{VK_FALSE},
+      .logicOp{VK_LOGIC_OP_COPY},
+      .attachmentCount{1u},
+      .pAttachments{&color_blend_attachment},
+      .blendConstants{0.0f, 0.0f, 0.0f, 0.0f}};
 
   {
-    VkDescriptorSetLayoutBinding ubo_binding;
-    ubo_binding.binding = 0;
-    ubo_binding.descriptorCount = 1;
-    ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    ubo_binding.pImmutableSamplers = nullptr;
+    const VkDescriptorSetLayoutBinding ubo_binding{
+        .binding{},
+        .descriptorType{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
+        .descriptorCount{1u},
+        .stageFlags{VK_SHADER_STAGE_VERTEX_BIT},
+        .pImmutableSamplers{nullptr}};
 
     const std::array<VkDescriptorSetLayoutBinding, 1> bindings{ubo_binding};
-    VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
-    descriptor_set_layout_create_info.sType =
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptor_set_layout_create_info.bindingCount =
-        static_cast<uint32_t>(bindings.size());
-    descriptor_set_layout_create_info.pBindings = bindings.data();
-    descriptor_set_layout_create_info.flags = 0;
-    descriptor_set_layout_create_info.pNext = nullptr;
+    const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
+        .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO},
+        .pNext{nullptr},
+        .flags{},
+        .bindingCount{static_cast<uint32_t>(bindings.size())},
+        .pBindings{bindings.data()}};
 
     VK_CHECK(vkCreateDescriptorSetLayout(
         m_context.device(), &descriptor_set_layout_create_info, nullptr,
@@ -688,24 +686,21 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
   }
 
   {
-    VkDescriptorSetLayoutBinding color_palette_binding;
-    color_palette_binding.binding = 0;
-    color_palette_binding.descriptorCount = 1;
-    color_palette_binding.descriptorType =
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    color_palette_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    color_palette_binding.pImmutableSamplers = nullptr;
+    const VkDescriptorSetLayoutBinding color_palette_binding{
+        .binding{},
+        .descriptorType{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
+        .descriptorCount{1u},
+        .stageFlags{VK_SHADER_STAGE_FRAGMENT_BIT},
+        .pImmutableSamplers{nullptr}};
 
     const std::array<VkDescriptorSetLayoutBinding, 1> bindings{
         color_palette_binding};
-    VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
-    descriptor_set_layout_create_info.sType =
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptor_set_layout_create_info.bindingCount =
-        static_cast<uint32_t>(bindings.size());
-    descriptor_set_layout_create_info.pBindings = bindings.data();
-    descriptor_set_layout_create_info.flags = 0;
-    descriptor_set_layout_create_info.pNext = nullptr;
+    const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
+        .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO},
+        .pNext{nullptr},
+        .flags{},
+        .bindingCount{static_cast<uint32_t>(bindings.size())},
+        .pBindings{bindings.data()}};
 
     VK_CHECK(vkCreateDescriptorSetLayout(
         m_context.device(), &descriptor_set_layout_create_info, nullptr,
@@ -715,75 +710,64 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
   const std::array<VkDescriptorSetLayout, 2> descriptor_set_layouts{
       m_graphics_pipeline_ubo_buffer_descriptor_set_layout,
       m_graphics_pipeline_color_palette_descriptor_set_layout};
-  VkPipelineLayoutCreateInfo pipeline_layout_info;
-  pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount =
-      static_cast<uint32_t>(descriptor_set_layouts.size());
-  pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
-  pipeline_layout_info.pushConstantRangeCount = 0;
-  pipeline_layout_info.pPushConstantRanges = nullptr;
-  pipeline_layout_info.flags = 0;
-  pipeline_layout_info.pNext = nullptr;
+  const VkPipelineLayoutCreateInfo pipeline_layout_info{
+      .sType{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .setLayoutCount{static_cast<uint32_t>(descriptor_set_layouts.size())},
+      .pSetLayouts{descriptor_set_layouts.data()},
+      .pushConstantRangeCount{},
+      .pPushConstantRanges{nullptr}};
 
   if (!m_color_palette_texture.has_value()) {
     return false;
   }
 
-  VkDescriptorImageInfo image_info;
-  image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  image_info.imageView = m_color_palette_texture->image_view();
-  image_info.sampler = m_color_palette_texture->sampler();
+  const VkDescriptorImageInfo image_info{
+      .sampler{m_color_palette_texture->sampler()},
+      .imageView{m_color_palette_texture->image_view()},
+      .imageLayout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}};
 
-  VkDescriptorPoolSize ubo_buffer_descriptor_pool_size;
-  ubo_buffer_descriptor_pool_size.descriptorCount = 1;
-  ubo_buffer_descriptor_pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  const VkDescriptorPoolSize ubo_buffer_descriptor_pool_size{
+      .type{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER}, .descriptorCount{1u}};
 
-  VkDescriptorPoolSize color_palette_image_descriptor_pool_size;
-  color_palette_image_descriptor_pool_size.descriptorCount = 1;
-  color_palette_image_descriptor_pool_size.type =
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  const VkDescriptorPoolSize color_palette_image_descriptor_pool_size{
+      .type{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, .descriptorCount{1u}};
 
   const std::array<VkDescriptorPoolSize, 2> descriptor_pool_sizes{
       ubo_buffer_descriptor_pool_size,
       color_palette_image_descriptor_pool_size};
-  VkDescriptorPoolCreateInfo descriptor_pool_create_info;
-  descriptor_pool_create_info.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-  descriptor_pool_create_info.poolSizeCount =
-      static_cast<uint32_t>(descriptor_pool_sizes.size());
-  descriptor_pool_create_info.pPoolSizes = descriptor_pool_sizes.data();
-  descriptor_pool_create_info.maxSets = 10;
-  descriptor_pool_create_info.flags =
-      VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-  descriptor_pool_create_info.pNext = nullptr;
+  const VkDescriptorPoolCreateInfo descriptor_pool_create_info{
+      .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT},
+      .maxSets{10u},
+      .poolSizeCount{static_cast<uint32_t>(descriptor_pool_sizes.size())},
+      .pPoolSizes{descriptor_pool_sizes.data()}};
 
   VK_CHECK(vkCreateDescriptorPool(m_context.device(),
                                   &descriptor_pool_create_info, nullptr,
                                   &m_graphics_pipeline_descriptor_pool));
 
-  VkDescriptorSetAllocateInfo ubo_buffer_descriptor_set_allocate_info;
-  ubo_buffer_descriptor_set_allocate_info.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  ubo_buffer_descriptor_set_allocate_info.descriptorPool =
-      m_graphics_pipeline_descriptor_pool;
-  ubo_buffer_descriptor_set_allocate_info.descriptorSetCount = 1;
-  ubo_buffer_descriptor_set_allocate_info.pSetLayouts =
-      &m_graphics_pipeline_ubo_buffer_descriptor_set_layout;
-  ubo_buffer_descriptor_set_allocate_info.pNext = nullptr;
+  const VkDescriptorSetAllocateInfo ubo_buffer_descriptor_set_allocate_info{
+      .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO},
+      .pNext{nullptr},
+      .descriptorPool{m_graphics_pipeline_descriptor_pool},
+      .descriptorSetCount{1u},
+      .pSetLayouts{&m_graphics_pipeline_ubo_buffer_descriptor_set_layout}};
 
   VK_CHECK(vkAllocateDescriptorSets(
       m_context.device(), &ubo_buffer_descriptor_set_allocate_info,
       &m_graphics_pipeline_ubo_buffer_descriptor_set));
 
-  VkDescriptorSetAllocateInfo color_palette_image_descriptor_set_allocate_info;
-  color_palette_image_descriptor_set_allocate_info.sType =
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  color_palette_image_descriptor_set_allocate_info.descriptorPool =
-      m_graphics_pipeline_descriptor_pool;
-  color_palette_image_descriptor_set_allocate_info.descriptorSetCount = 1;
-  color_palette_image_descriptor_set_allocate_info.pSetLayouts =
-      &m_graphics_pipeline_color_palette_descriptor_set_layout;
-  color_palette_image_descriptor_set_allocate_info.pNext = nullptr;
+  const VkDescriptorSetAllocateInfo
+      color_palette_image_descriptor_set_allocate_info{
+          .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO},
+          .pNext{nullptr},
+          .descriptorPool{m_graphics_pipeline_descriptor_pool},
+          .descriptorSetCount{1u},
+          .pSetLayouts{
+              &m_graphics_pipeline_color_palette_descriptor_set_layout}};
 
   VK_CHECK(vkAllocateDescriptorSets(
       m_context.device(), &color_palette_image_descriptor_set_allocate_info,
@@ -802,20 +786,17 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
 
   m_ubo_buffer.emplace(std::move(*ubo_buffer));
 
-  VkWriteDescriptorSet color_palette_descriptor_set_write{};
-  color_palette_descriptor_set_write.sType =
-      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  color_palette_descriptor_set_write.descriptorType =
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  color_palette_descriptor_set_write.dstBinding = 0;
-  color_palette_descriptor_set_write.dstArrayElement = 0;
-  color_palette_descriptor_set_write.descriptorCount = 1;
-  color_palette_descriptor_set_write.dstSet =
-      m_graphics_pipeline_color_palette_descriptor_set;
-  color_palette_descriptor_set_write.pBufferInfo = nullptr;
-  color_palette_descriptor_set_write.pImageInfo = &image_info;
-  color_palette_descriptor_set_write.pTexelBufferView = nullptr;
-  color_palette_descriptor_set_write.pNext = nullptr;
+  const VkWriteDescriptorSet color_palette_descriptor_set_write{
+      .sType{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET},
+      .pNext{nullptr},
+      .dstSet{m_graphics_pipeline_color_palette_descriptor_set},
+      .dstBinding{},
+      .dstArrayElement{},
+      .descriptorCount{1u},
+      .descriptorType{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
+      .pImageInfo{&image_info},
+      .pBufferInfo{nullptr},
+      .pTexelBufferView{nullptr}};
 
   vkUpdateDescriptorSets(m_context.device(), 1,
                          &color_palette_descriptor_set_write, 0, nullptr);
@@ -826,25 +807,22 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
     return false;
   }
 
-  VkDescriptorBufferInfo buffer_info;
-  buffer_info.buffer = m_ubo_buffer->handle();
-  buffer_info.range = sizeof(uniform_buffer_object);
-  buffer_info.offset = 0;
+  const VkDescriptorBufferInfo buffer_info{
+      .buffer{m_ubo_buffer->handle()},
+      .offset{},
+      .range{sizeof(uniform_buffer_object)}};
 
-  VkWriteDescriptorSet ubo_buffer_descriptor_set_write{};
-  ubo_buffer_descriptor_set_write.sType =
-      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  ubo_buffer_descriptor_set_write.descriptorType =
-      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  ubo_buffer_descriptor_set_write.dstBinding = 0;
-  ubo_buffer_descriptor_set_write.dstArrayElement = 0;
-  ubo_buffer_descriptor_set_write.descriptorCount = 1;
-  ubo_buffer_descriptor_set_write.dstSet =
-      m_graphics_pipeline_ubo_buffer_descriptor_set;
-  ubo_buffer_descriptor_set_write.pBufferInfo = &buffer_info;
-  ubo_buffer_descriptor_set_write.pImageInfo = nullptr;
-  ubo_buffer_descriptor_set_write.pTexelBufferView = nullptr;
-  ubo_buffer_descriptor_set_write.pNext = nullptr;
+  const VkWriteDescriptorSet ubo_buffer_descriptor_set_write{
+      .sType{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET},
+      .pNext{nullptr},
+      .dstSet{m_graphics_pipeline_ubo_buffer_descriptor_set},
+      .dstBinding{},
+      .dstArrayElement{},
+      .descriptorCount{1u},
+      .descriptorType{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
+      .pImageInfo{nullptr},
+      .pBufferInfo{&buffer_info},
+      .pTexelBufferView{nullptr}};
 
   vkUpdateDescriptorSets(m_context.device(), 1,
                          &ubo_buffer_descriptor_set_write, 0, nullptr);
@@ -855,21 +833,26 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
     return false;
   }
 
-  VkGraphicsPipelineCreateInfo pipeline_info{};
-  pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipeline_info.stageCount = static_cast<uint32_t>(shader_stages.size());
-  pipeline_info.pStages = shader_stages.data();
-  pipeline_info.pVertexInputState = &vertex_input_info;
-  pipeline_info.pInputAssemblyState = &input_assembly;
-  pipeline_info.pViewportState = &viewport_state;
-  pipeline_info.pRasterizationState = &rasterizer_state_info;
-  pipeline_info.pMultisampleState = &multisampling;
-  pipeline_info.pColorBlendState = &color_blending;
-  pipeline_info.layout = m_graphics_pipeline_layout;
-  pipeline_info.renderPass = m_swapchain_render_pass;
-  pipeline_info.pDynamicState = &dynamic_state_info;
-  pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-  pipeline_info.subpass = 0;
+  const VkGraphicsPipelineCreateInfo pipeline_info{
+      .sType{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO},
+      .pNext{nullptr},
+      .flags{},
+      .stageCount{static_cast<uint32_t>(shader_stages.size())},
+      .pStages{shader_stages.data()},
+      .pVertexInputState{&vertex_input_info},
+      .pInputAssemblyState{&input_assembly},
+      .pTessellationState{nullptr},
+      .pViewportState{&viewport_state},
+      .pRasterizationState{&rasterizer_state_info},
+      .pMultisampleState{&multisampling},
+      .pDepthStencilState{nullptr},
+      .pColorBlendState{&color_blending},
+      .pDynamicState{&dynamic_state_info},
+      .layout{m_graphics_pipeline_layout},
+      .renderPass{m_swapchain_render_pass},
+      .subpass{},
+      .basePipelineHandle{VK_NULL_HANDLE},
+      .basePipelineIndex{}};
 
   if (vkCreateGraphicsPipelines(m_context.device(), VK_NULL_HANDLE, 1,
                                 &pipeline_info, nullptr,
@@ -886,13 +869,12 @@ bool realtime_mandelbrot_application::create_graphics_based_pipeline() {
 }
 
 bool realtime_mandelbrot_application::allocate_graphics_command_buffers() {
-  VkCommandBufferAllocateInfo command_buffer_allocate_info;
-  command_buffer_allocate_info.sType =
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  command_buffer_allocate_info.commandPool = m_context.graphics_command_pool();
-  command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  command_buffer_allocate_info.commandBufferCount = m_image_count;
-  command_buffer_allocate_info.pNext = nullptr;
+  const VkCommandBufferAllocateInfo command_buffer_allocate_info{
+      .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO},
+      .pNext{nullptr},
+      .commandPool{m_context.graphics_command_pool()},
+      .level{VK_COMMAND_BUFFER_LEVEL_PRIMARY},
+      .commandBufferCount{m_image_count}};
 
   m_graphics_pipeline_command_buffers.resize(m_image_count);
   VK_CHECK(vkAllocateCommandBuffers(
@@ -909,37 +891,33 @@ bool realtime_mandelbrot_application::record_graphics_command_buffers() {
 
   for (uint32_t i = 0; i < m_image_count; ++i) {
     VkCommandBuffer &command_buffer = m_graphics_pipeline_command_buffers[i];
-    VkCommandBufferBeginInfo command_buffer_begin_info;
-    command_buffer_begin_info.sType =
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    command_buffer_begin_info.pInheritanceInfo = nullptr;
-    command_buffer_begin_info.flags = 0;
-    command_buffer_begin_info.pNext = nullptr;
+    const VkCommandBufferBeginInfo command_buffer_begin_info{
+        .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO},
+        .pNext{nullptr},
+        .flags{},
+        .pInheritanceInfo{nullptr}};
 
-    VkClearValue color_clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    std::array<VkClearValue, 1u> clear_values{color_clear_value};
+    const VkClearValue color_clear_value{{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    const std::array<VkClearValue, 1u> clear_values{color_clear_value};
 
-    VkRenderPassBeginInfo render_pass_begin_info;
-    render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_begin_info.framebuffer = m_swapchain_framebuffers[i];
-    render_pass_begin_info.renderPass = m_swapchain_render_pass;
-    render_pass_begin_info.clearValueCount = 1;
-    render_pass_begin_info.pClearValues = clear_values.data();
-    render_pass_begin_info.renderArea.extent = m_swapchain_extent;
-    render_pass_begin_info.renderArea.offset = {.x{0}, .y{0}};
-    render_pass_begin_info.pNext = nullptr;
+    const VkRenderPassBeginInfo render_pass_begin_info{
+        .sType{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO},
+        .pNext{nullptr},
+        .renderPass{m_swapchain_render_pass},
+        .framebuffer{m_swapchain_framebuffers[i]},
+        .renderArea{.offset{.x{0}, .y{0}}, .extent{m_swapchain_extent}},
+        .clearValueCount{1u},
+        .pClearValues{clear_values.data()}};
 
-    VkViewport viewport;
-    viewport.width = static_cast<float>(m_swapchain_extent.width);
-    viewport.height = static_cast<float>(m_swapchain_extent.height);
-    viewport.x = 0;
-    viewport.y = 0;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    const VkViewport viewport{
+        .x{0.0f},
+        .y{0.0f},
+        .width{static_cast<float>(m_swapchain_extent.width)},
+        .height{static_cast<float>(m_swapchain_extent.height)},
+        .minDepth{0.0f},
+        .maxDepth{1.0f}};
 
-    VkRect2D scissor;
-    scissor.extent = m_swapchain_extent;
-    scissor.offset = {.x{0}, .y{0}};
+    const VkRect2D scissor{.offset{.x{0}, .y{0}}, .extent{m_swapchain_extent}};
 
     VK_CHECK(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 
@@ -1047,26 +1025,6 @@ void realtime_mandelbrot_application::update_frame_data(
       !m_ubo_buffer->write(std::as_bytes(std::span{&ubo, 1}))) {
     return;
   }
-
-  VkDescriptorBufferInfo buffer_info;
-  buffer_info.buffer = m_ubo_buffer->handle();
-  buffer_info.range = sizeof(uniform_buffer_object);
-  buffer_info.offset = 0;
-
-  VkWriteDescriptorSet ubo_buffer_descriptor_set_write{};
-  ubo_buffer_descriptor_set_write.sType =
-      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  ubo_buffer_descriptor_set_write.descriptorType =
-      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  ubo_buffer_descriptor_set_write.dstBinding = 0;
-  ubo_buffer_descriptor_set_write.dstArrayElement = 0;
-  ubo_buffer_descriptor_set_write.descriptorCount = 1;
-  ubo_buffer_descriptor_set_write.dstSet =
-      m_graphics_pipeline_ubo_buffer_descriptor_set;
-  ubo_buffer_descriptor_set_write.pBufferInfo = &buffer_info;
-  ubo_buffer_descriptor_set_write.pImageInfo = nullptr;
-  ubo_buffer_descriptor_set_write.pTexelBufferView = nullptr;
-  ubo_buffer_descriptor_set_write.pNext = nullptr;
 }
 
 void realtime_mandelbrot_application::draw_frame() {
@@ -1092,16 +1050,16 @@ void realtime_mandelbrot_application::draw_frame() {
   const std::array<VkPipelineStageFlags, 1ull> wait_stages{
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-  VkSubmitInfo submit_info{};
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers =
-      &m_graphics_pipeline_command_buffers[m_image_index];
-  submit_info.waitSemaphoreCount = 1;
-  submit_info.pWaitSemaphores = &m_semaphores.present_complete[m_frame_index];
-  submit_info.signalSemaphoreCount = 1;
-  submit_info.pSignalSemaphores = &m_semaphores.render_complete[m_frame_index];
-  submit_info.pWaitDstStageMask = wait_stages.data();
+  const VkSubmitInfo submit_info{
+      .sType{VK_STRUCTURE_TYPE_SUBMIT_INFO},
+      .pNext{nullptr},
+      .waitSemaphoreCount{1u},
+      .pWaitSemaphores{&m_semaphores.present_complete[m_frame_index]},
+      .pWaitDstStageMask{wait_stages.data()},
+      .commandBufferCount{1u},
+      .pCommandBuffers{&m_graphics_pipeline_command_buffers[m_image_index]},
+      .signalSemaphoreCount{1u},
+      .pSignalSemaphores{&m_semaphores.render_complete[m_frame_index]}};
 
   VK_CHECK(
       vkResetFences(m_context.device(), 1, &m_in_flight_fences[m_frame_index]));
@@ -1109,15 +1067,15 @@ void realtime_mandelbrot_application::draw_frame() {
   VK_CHECK(vkQueueSubmit(m_context.graphics_queue(), 1, &submit_info,
                          m_in_flight_fences[m_frame_index]));
 
-  VkPresentInfoKHR present_info;
-  present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  present_info.swapchainCount = 1;
-  present_info.pSwapchains = &m_swapchain;
-  present_info.pImageIndices = &m_image_index;
-  present_info.waitSemaphoreCount = 1;
-  present_info.pWaitSemaphores = &m_semaphores.render_complete[m_frame_index];
-  present_info.pResults = nullptr;
-  present_info.pNext = nullptr;
+  const VkPresentInfoKHR present_info{
+      .sType{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR},
+      .pNext{nullptr},
+      .waitSemaphoreCount{1u},
+      .pWaitSemaphores{&m_semaphores.render_complete[m_frame_index]},
+      .swapchainCount{1u},
+      .pSwapchains{&m_swapchain},
+      .pImageIndices{&m_image_index},
+      .pResults{nullptr}};
 
   result = vkQueuePresentKHR(m_context.graphics_queue(), &present_info);
 
