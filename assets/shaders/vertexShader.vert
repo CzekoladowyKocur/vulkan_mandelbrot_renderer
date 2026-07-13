@@ -16,6 +16,8 @@ layout(location = 2) out float v_CenterX;
 layout(location = 3) out float v_CenterY;
 layout(location = 4) out float v_ZoomScale;
 layout(location = 5) out flat int v_IterationCount;
+layout(location = 6) out float v_PalettePeriod;
+layout(location = 7) out float v_PaletteOffset;
 
 layout(std140, set = 0, binding = 0) uniform UniformBufferObject {
     float AspectRatio;
@@ -23,7 +25,9 @@ layout(std140, set = 0, binding = 0) uniform UniformBufferObject {
 	float CenterY;
 	float ZoomScale;
 	int IterationCount;
-	vec3 Padding;
+	float PalettePeriod;
+	float PaletteOffset;
+	float Padding;
 } ubo;
 
 void main()
@@ -35,4 +39,6 @@ void main()
 	v_CenterY = ubo.CenterY;
 	v_ZoomScale = ubo.ZoomScale;
 	v_IterationCount = ubo.IterationCount;
+	v_PalettePeriod = ubo.PalettePeriod;
+	v_PaletteOffset = ubo.PaletteOffset;
 }

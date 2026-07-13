@@ -1,7 +1,6 @@
 #pragma once
 #include "include/VulkanTypes.hpp"
 #include "include/input.hpp"
-#include "include/texture_2d.hpp"
 #include "include/vulkan_buffer.hpp"
 #include "include/vulkan_context.hpp"
 #include "include/window.hpp"
@@ -22,9 +21,9 @@ private:
     float zoom_scale{};
     std::int32_t iteration_count{};
 
-    float padding_x{};
-    float padding_y{};
-    float padding_z{};
+    float palette_period{32.0f};
+    float palette_offset{};
+    float padding{};
   };
 
   struct surface_resource final {
@@ -69,10 +68,8 @@ private:
   struct pipeline_resources final {
     VkDevice device{VK_NULL_HANDLE};
     VkDescriptorSetLayout ubo_descriptor_set_layout{VK_NULL_HANDLE};
-    VkDescriptorSetLayout color_palette_descriptor_set_layout{VK_NULL_HANDLE};
     VkDescriptorPool descriptor_pool{VK_NULL_HANDLE};
     VkDescriptorSet ubo_descriptor_set{VK_NULL_HANDLE};
-    VkDescriptorSet color_palette_descriptor_set{VK_NULL_HANDLE};
     VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
     VkPipeline pipeline{VK_NULL_HANDLE};
 
@@ -117,7 +114,6 @@ private:
   [[nodiscard]] static std::expected<pipeline_resources, std::error_code>
   create_pipeline_resources(const vulkan_context &context,
                             const swapchain_resources &swapchain,
-                            const texture_2d &color_palette,
                             const vulkan_buffer &ubo_buffer);
 
   [[nodiscard]] static std::expected<graphics_command_buffers, std::error_code>

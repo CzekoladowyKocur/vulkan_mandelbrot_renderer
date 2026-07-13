@@ -1,5 +1,4 @@
 #include "include/realtime_mandelbrot_application.hpp"
-#include "include/image_2d.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -14,20 +13,6 @@
 namespace {
 
 constexpr std::uint64_t max_swapchain_timeout{UINT64_MAX};
-
-[[nodiscard]] std::expected<texture_2d, std::error_code>
-create_color_palette_texture(const vulkan_context &context) {
-  const auto palette_image{image_2d::create("assets/images/violetPalette.bmp")};
-  if (!palette_image) {
-    return std::unexpected{palette_image.error()};
-  }
-
-  return texture_2d::create({.image{*palette_image},
-                             .device{context.device()},
-                             .physical_device{context.physical_device()},
-                             .command_pool{context.graphics_command_pool()},
-                             .queue{context.graphics_queue()}});
-}
 
 [[nodiscard]] std::expected<vulkan_buffer, std::error_code>
 create_device_local_buffer(const vulkan_context &context,
@@ -190,18 +175,13 @@ realtime_mandelbrot_application::pipeline_resources::pipeline_resources(
     pipeline_resources &&other) noexcept
     : device{other.device},
       ubo_descriptor_set_layout{other.ubo_descriptor_set_layout},
-      color_palette_descriptor_set_layout{
-          other.color_palette_descriptor_set_layout},
       descriptor_pool{other.descriptor_pool},
       ubo_descriptor_set{other.ubo_descriptor_set},
-      color_palette_descriptor_set{other.color_palette_descriptor_set},
       pipeline_layout{other.pipeline_layout}, pipeline{other.pipeline} {
   other.device = VK_NULL_HANDLE;
   other.ubo_descriptor_set_layout = VK_NULL_HANDLE;
-  other.color_palette_descriptor_set_layout = VK_NULL_HANDLE;
   other.descriptor_pool = VK_NULL_HANDLE;
   other.ubo_descriptor_set = VK_NULL_HANDLE;
-  other.color_palette_descriptor_set = VK_NULL_HANDLE;
   other.pipeline_layout = VK_NULL_HANDLE;
   other.pipeline = VK_NULL_HANDLE;
 }
@@ -217,20 +197,15 @@ realtime_mandelbrot_application::pipeline_resources::operator=(
 
   device = other.device;
   ubo_descriptor_set_layout = other.ubo_descriptor_set_layout;
-  color_palette_descriptor_set_layout =
-      other.color_palette_descriptor_set_layout;
   descriptor_pool = other.descriptor_pool;
   ubo_descriptor_set = other.ubo_descriptor_set;
-  color_palette_descriptor_set = other.color_palette_descriptor_set;
   pipeline_layout = other.pipeline_layout;
   pipeline = other.pipeline;
 
   other.device = VK_NULL_HANDLE;
   other.ubo_descriptor_set_layout = VK_NULL_HANDLE;
-  other.color_palette_descriptor_set_layout = VK_NULL_HANDLE;
   other.descriptor_pool = VK_NULL_HANDLE;
   other.ubo_descriptor_set = VK_NULL_HANDLE;
-  other.color_palette_descriptor_set = VK_NULL_HANDLE;
   other.pipeline_layout = VK_NULL_HANDLE;
   other.pipeline = VK_NULL_HANDLE;
   return *this;
@@ -249,8 +224,6 @@ void realtime_mandelbrot_application::pipeline_resources::destroy() noexcept {
   vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
   vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
   vkDestroyDescriptorSetLayout(device, ubo_descriptor_set_layout, nullptr);
-  vkDestroyDescriptorSetLayout(device, color_palette_descriptor_set_layout,
-                               nullptr);
 }
 
 realtime_mandelbrot_application::graphics_command_buffers::
@@ -627,7 +600,7 @@ std::expected<realtime_mandelbrot_application::pipeline_resources,
               std::error_code>
 realtime_mandelbrot_application::create_pipeline_resources(
     const vulkan_context &context, const swapchain_resources &swapchain,
-    const texture_2d &color_palette, const vulkan_buffer &ubo_buffer) {
+    const vulkan_buffer &ubo_buffer) {
   pipeline_resources resources{};
   resources.device = context.device();
 
@@ -654,40 +627,15 @@ realtime_mandelbrot_application::create_pipeline_resources(
     }
   }
 
-  {
-    const VkDescriptorSetLayoutBinding color_palette_binding{
-        .binding{},
-        .descriptorType{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
-        .descriptorCount{1u},
-        .stageFlags{VK_SHADER_STAGE_FRAGMENT_BIT},
-        .pImmutableSamplers{nullptr}};
-
-    const VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
-        .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO},
-        .pNext{nullptr},
-        .flags{},
-        .bindingCount{1u},
-        .pBindings{&color_palette_binding}};
-
-    if (const VkResult result{vkCreateDescriptorSetLayout(
-            context.device(), &descriptor_set_layout_create_info, nullptr,
-            &resources.color_palette_descriptor_set_layout)};
-        result != VK_SUCCESS) {
-      return make_vulkan_error(result);
-    }
-  }
-
-  const std::array<VkDescriptorPoolSize, 2uz> descriptor_pool_sizes{
+  const std::array<VkDescriptorPoolSize, 1uz> descriptor_pool_sizes{
       VkDescriptorPoolSize{.type{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
-                           .descriptorCount{1u}},
-      VkDescriptorPoolSize{.type{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
                            .descriptorCount{1u}}};
 
   const VkDescriptorPoolCreateInfo descriptor_pool_create_info{
       .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO},
       .pNext{nullptr},
       .flags{},
-      .maxSets{2u},
+      .maxSets{1u},
       .poolSizeCount{static_cast<std::uint32_t>(descriptor_pool_sizes.size())},
       .pPoolSizes{descriptor_pool_sizes.data()}};
 
@@ -712,31 +660,12 @@ realtime_mandelbrot_application::create_pipeline_resources(
     return make_vulkan_error(result);
   }
 
-  const VkDescriptorSetAllocateInfo color_palette_descriptor_set_allocate_info{
-      .sType{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO},
-      .pNext{nullptr},
-      .descriptorPool{resources.descriptor_pool},
-      .descriptorSetCount{1u},
-      .pSetLayouts{&resources.color_palette_descriptor_set_layout}};
-
-  if (const VkResult result{vkAllocateDescriptorSets(
-          context.device(), &color_palette_descriptor_set_allocate_info,
-          &resources.color_palette_descriptor_set)};
-      result != VK_SUCCESS) {
-    return make_vulkan_error(result);
-  }
-
-  const VkDescriptorImageInfo image_info{
-      .sampler{color_palette.sampler()},
-      .imageView{color_palette.image_view()},
-      .imageLayout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}};
-
   const VkDescriptorBufferInfo buffer_info{
       .buffer{ubo_buffer.handle()},
       .offset{},
       .range{sizeof(uniform_buffer_object)}};
 
-  const std::array<VkWriteDescriptorSet, 2uz> descriptor_set_writes{
+  const std::array<VkWriteDescriptorSet, 1uz> descriptor_set_writes{
       VkWriteDescriptorSet{.sType{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET},
                            .pNext{nullptr},
                            .dstSet{resources.ubo_descriptor_set},
@@ -746,27 +675,15 @@ realtime_mandelbrot_application::create_pipeline_resources(
                            .descriptorType{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
                            .pImageInfo{nullptr},
                            .pBufferInfo{&buffer_info},
-                           .pTexelBufferView{nullptr}},
-      VkWriteDescriptorSet{
-          .sType{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET},
-          .pNext{nullptr},
-          .dstSet{resources.color_palette_descriptor_set},
-          .dstBinding{},
-          .dstArrayElement{},
-          .descriptorCount{1u},
-          .descriptorType{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
-          .pImageInfo{&image_info},
-          .pBufferInfo{nullptr},
-          .pTexelBufferView{nullptr}}};
+                           .pTexelBufferView{nullptr}}};
 
   vkUpdateDescriptorSets(
       context.device(),
       static_cast<std::uint32_t>(descriptor_set_writes.size()),
       descriptor_set_writes.data(), 0, nullptr);
 
-  const std::array<VkDescriptorSetLayout, 2uz> descriptor_set_layouts{
-      resources.ubo_descriptor_set_layout,
-      resources.color_palette_descriptor_set_layout};
+  const std::array<VkDescriptorSetLayout, 1uz> descriptor_set_layouts{
+      resources.ubo_descriptor_set_layout};
 
   const VkPipelineLayoutCreateInfo pipeline_layout_info{
       .sType{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO},
@@ -1035,8 +952,8 @@ realtime_mandelbrot_application::record_graphics_command_buffers(
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       pipeline.pipeline);
 
-    const std::array<VkDescriptorSet, 2uz> descriptor_sets{
-        pipeline.ubo_descriptor_set, pipeline.color_palette_descriptor_set};
+    const std::array<VkDescriptorSet, 1uz> descriptor_sets{
+        pipeline.ubo_descriptor_set};
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipeline.pipeline_layout, 0,
                             static_cast<std::uint32_t>(descriptor_sets.size()),
@@ -1104,10 +1021,36 @@ realtime_mandelbrot_application::update_frame_data(const float delta_time,
 
   if (m_input.is_key_pressed(key_code::up)) {
     ubo.iteration_count += 1;
+
+    std::println("increased iteration count to: {}", ubo.iteration_count);
   }
 
   if (m_input.is_key_pressed(key_code::down)) {
     ubo.iteration_count -= 1;
+
+    std::println("decreased iteration count to: {}", ubo.iteration_count);
+  }
+
+  constexpr float palette_period_speed{16.0f};
+  constexpr float palette_offset_speed{0.25f};
+  constexpr float min_palette_period{2.0f};
+
+  if (m_input.is_key_pressed(key_code::c)) {
+    ubo.palette_period =
+        std::max(min_palette_period,
+                 ubo.palette_period - palette_period_speed * delta_time);
+  }
+
+  if (m_input.is_key_pressed(key_code::v)) {
+    ubo.palette_period += palette_period_speed * delta_time;
+  }
+
+  if (m_input.is_key_pressed(key_code::left)) {
+    ubo.palette_offset -= palette_offset_speed * delta_time;
+  }
+
+  if (m_input.is_key_pressed(key_code::right)) {
+    ubo.palette_offset += palette_offset_speed * delta_time;
   }
 
   /* Cap the zoom scale to avoid black border as we are rendering a quad */
@@ -1215,13 +1158,6 @@ std::expected<void, std::error_code> realtime_mandelbrot_application::run() {
 
   const vulkan_context context{std::move(*created_context)};
 
-  auto created_color_palette{create_color_palette_texture(context)};
-  if (!created_color_palette) {
-    return std::unexpected{created_color_palette.error()};
-  }
-
-  const texture_2d color_palette{std::move(*created_color_palette)};
-
   auto created_window{window::create({.width{m_swapchain_extent.width},
                                       .height{m_swapchain_extent.height},
                                       .name{"Vulkan Mandelbrot Set Renderer"},
@@ -1285,7 +1221,7 @@ std::expected<void, std::error_code> realtime_mandelbrot_application::run() {
   vulkan_buffer ubo_buffer{std::move(*created_ubo_buffer)};
 
   auto created_pipeline{
-      create_pipeline_resources(context, swapchain, color_palette, ubo_buffer)};
+      create_pipeline_resources(context, swapchain, ubo_buffer)};
   if (!created_pipeline) {
     return std::unexpected{created_pipeline.error()};
   }
@@ -1317,9 +1253,9 @@ std::expected<void, std::error_code> realtime_mandelbrot_application::run() {
       .center_y{0.0f},
       .zoom_scale{zoom_scale},
       .iteration_count{800},
-      .padding_x{},
-      .padding_y{},
-      .padding_z{}};
+      .palette_period{32.0f},
+      .palette_offset{},
+      .padding{}};
 
   if (const auto written{ubo_buffer.write(std::as_bytes(std::span{&ubo, 1}))};
       !written) {
