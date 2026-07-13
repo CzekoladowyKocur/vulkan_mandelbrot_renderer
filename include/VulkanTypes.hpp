@@ -266,27 +266,35 @@ end_single_time_commands(const single_time_command_context &context,
   return {};
 }
 
+struct insert_image_memory_barrier_props final {
+  VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+  VkImage image{VK_NULL_HANDLE};
+  VkAccessFlags src_access_mask{};
+  VkAccessFlags dst_access_mask{};
+  VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkImageLayout new_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkPipelineStageFlags src_stage_mask{};
+  VkPipelineStageFlags dst_stage_mask{};
+  VkImageSubresourceRange subresource_range{};
+};
+
 inline void insert_image_memory_barrier(
-    const VkCommandBuffer command_buffer, const VkImage image,
-    const VkAccessFlags src_access_mask, const VkAccessFlags dst_access_mask,
-    const VkImageLayout old_layout, const VkImageLayout new_layout,
-    const VkPipelineStageFlags src_stage_mask,
-    const VkPipelineStageFlags dst_stage_mask,
-    const VkImageSubresourceRange &subresource_range) noexcept {
+    insert_image_memory_barrier_props &&props) noexcept {
   const VkImageMemoryBarrier image_memory_barrier{
       .sType{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER},
       .pNext{nullptr},
-      .srcAccessMask{src_access_mask},
-      .dstAccessMask{dst_access_mask},
-      .oldLayout{old_layout},
-      .newLayout{new_layout},
+      .srcAccessMask{props.src_access_mask},
+      .dstAccessMask{props.dst_access_mask},
+      .oldLayout{props.old_layout},
+      .newLayout{props.new_layout},
       .srcQueueFamilyIndex{VK_QUEUE_FAMILY_IGNORED},
       .dstQueueFamilyIndex{VK_QUEUE_FAMILY_IGNORED},
-      .image{image},
-      .subresourceRange{subresource_range}};
+      .image{props.image},
+      .subresourceRange{props.subresource_range}};
 
-  vkCmdPipelineBarrier(command_buffer, src_stage_mask, dst_stage_mask, 0, 0,
-                       nullptr, 0, nullptr, 1, &image_memory_barrier);
+  vkCmdPipelineBarrier(props.command_buffer, props.src_stage_mask,
+                       props.dst_stage_mask, 0, 0, nullptr, 0, nullptr, 1,
+                       &image_memory_barrier);
 }
 
 [[nodiscard]] inline VkAccessFlags
@@ -345,11 +353,16 @@ destination_access_mask_for_layout(const VkImageLayout layout) noexcept {
   }
 }
 
-inline void
-set_image_layout(const VkCommandBuffer command_buffer, const VkImage image,
-                 const VkImageLayout old_layout, const VkImageLayout new_layout,
-                 const VkPipelineStageFlags src_stage_mask,
-                 const VkPipelineStageFlags dst_stage_mask) noexcept {
+struct set_image_layout_props final {
+  VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+  VkImage image{VK_NULL_HANDLE};
+  VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkImageLayout new_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkPipelineStageFlags src_stage_mask{};
+  VkPipelineStageFlags dst_stage_mask{};
+};
+
+inline void set_image_layout(set_image_layout_props &&props) noexcept {
   constexpr VkImageSubresourceRange subresource_range{
       .aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
       .baseMipLevel{},
@@ -357,18 +370,25 @@ set_image_layout(const VkCommandBuffer command_buffer, const VkImage image,
       .baseArrayLayer{},
       .layerCount{1}};
 
-  VkAccessFlags src_access_mask{source_access_mask_for_layout(old_layout)};
+  VkAccessFlags src_access_mask{
+      source_access_mask_for_layout(props.old_layout)};
   const VkAccessFlags dst_access_mask{
-      destination_access_mask_for_layout(new_layout)};
+      destination_access_mask_for_layout(props.new_layout)};
 
-  if (new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
+  if (props.new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
       src_access_mask == 0) {
     src_access_mask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
   }
 
-  insert_image_memory_barrier(
-      command_buffer, image, src_access_mask, dst_access_mask, old_layout,
-      new_layout, src_stage_mask, dst_stage_mask, subresource_range);
+  insert_image_memory_barrier({.command_buffer{props.command_buffer},
+                               .image{props.image},
+                               .src_access_mask{src_access_mask},
+                               .dst_access_mask{dst_access_mask},
+                               .old_layout{props.old_layout},
+                               .new_layout{props.new_layout},
+                               .src_stage_mask{props.src_stage_mask},
+                               .dst_stage_mask{props.dst_stage_mask},
+                               .subresource_range{subresource_range}});
 }
 
 #ifdef APP_DEBUG
