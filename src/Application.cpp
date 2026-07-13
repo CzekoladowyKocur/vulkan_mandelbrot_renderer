@@ -34,7 +34,6 @@ constexpr std::size_t RenderedImageSize =
     sizeof(uint8_t) * 4ull;
 } // namespace Utilities
 
-VulkanApp *VulkanApp::s_ApplicationInstance = nullptr;
 VulkanApp::VulkanApp(const ERenderMethod renderMethod)
     : m_RenderMethod(renderMethod), m_Running(true), m_window(std::nullopt),
       /* Vulkan API */
@@ -74,8 +73,6 @@ VulkanApp::VulkanApp(const ERenderMethod renderMethod)
       m_DebugReportCallback(VK_NULL_HANDLE)
 #endif
 {
-  assert(!s_ApplicationInstance);
-  s_ApplicationInstance = this;
 }
 
 VulkanApp::~VulkanApp() {
@@ -288,13 +285,6 @@ void VulkanApp::OnEvent(const event &polled_event) {
              },
              polled_event);
 }
-
-bool VulkanApp::Close() {
-  s_ApplicationInstance->m_Running = false;
-  return true;
-}
-
-VulkanApp *VulkanApp::GetInstance() { return s_ApplicationInstance; }
 
 bool VulkanApp::CreateInstance() {
   const auto windowExtensions{window::get_required_extensions()};
