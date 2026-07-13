@@ -52,10 +52,6 @@ private:
   /* Pipeline */
   VkShaderModule CreateShaderModule(const std::string_view filepath) const;
 
-  VkCommandBuffer BeginRecordingSingleTimeUseCommands(const bool compute);
-  void EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer,
-                                         const bool compute);
-
 private:
   struct UBO {
     float AspectRatio;
@@ -121,7 +117,6 @@ private:
 
   uint32_t m_MaxFramesInFlight;
   uint32_t m_ImageCount;
-  uint32_t m_MinimalImageCount;
 
   std::vector<VkImage> m_SwapchainImages;
   std::vector<VkImageView> m_SwapchainImageViews;
@@ -177,7 +172,4 @@ private:
 #endif
 private:
   static VulkanApp *s_ApplicationInstance;
-
-private:
-  friend class texture_2d;
 };

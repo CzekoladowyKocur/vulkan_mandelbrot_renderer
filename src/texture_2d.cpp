@@ -1,5 +1,4 @@
 #include "include/texture_2d.hpp"
-#include "include/Application.hpp"
 #include <cstring>
 #include <memory>
 #include <utility>
@@ -8,13 +7,19 @@ std::expected<texture_2d, std::error_code>
 texture_2d::create(const texture_2d_props &props) noexcept {
   try {
     if (props.image.pixels.empty() || props.device == VK_NULL_HANDLE ||
-        props.physical_device == VK_NULL_HANDLE) {
+        props.physical_device == VK_NULL_HANDLE ||
+        props.command_pool == VK_NULL_HANDLE || props.queue == VK_NULL_HANDLE) {
       return std::unexpected(std::make_error_code(std::errc::invalid_argument));
     }
 
+    const single_time_command_context commands{
+        .device{props.device},
+        .command_pool{props.command_pool},
+        .queue{props.queue}};
+
     texture_2d texture{props.image.width, props.image.height, props.device};
     if (const auto result{texture.initialize(props.image, props.physical_device,
-                                             props.sampler)};
+                                             commands, props.sampler)};
         !result) {
       return std::unexpected(result.error());
     }
@@ -32,6 +37,7 @@ texture_2d::texture_2d(const std::uint32_t width, const std::uint32_t height,
 std::expected<void, std::error_code>
 texture_2d::initialize(const image_2d &image,
                        const VkPhysicalDevice physical_device,
+                       const single_time_command_context &commands,
                        const texture_2d_sampler_props &sampler) {
   constexpr VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
   const VkDeviceSize pixelByteCount{image.pixels.size()};
@@ -187,31 +193,35 @@ texture_2d::initialize(const image_2d &image,
       .imageOffset{.x{}, .y{}, .z{}},
       .imageExtent{.width{m_width}, .height{m_height}, .depth{1}}};
 
-  VkCommandBuffer commandBuffer{
-      VulkanApp::GetInstance()->BeginRecordingSingleTimeUseCommands(false)};
+  const auto commandBuffer{begin_single_time_commands(commands)};
+  if (!commandBuffer) {
+    return std::unexpected(commandBuffer.error());
+  }
 
-  vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_HOST_BIT,
+  vkCmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_HOST_BIT,
                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
                        nullptr, 1, &imageMemoryBarrier);
 
-  vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_ImageHandle,
+  vkCmdCopyBufferToImage(*commandBuffer, staging.buffer, m_ImageHandle,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                          &imageBufferCopyRegion);
 
   insert_image_memory_barrier(
-      commandBuffer, m_ImageHandle, VK_ACCESS_TRANSFER_WRITE_BIT,
+      *commandBuffer, m_ImageHandle, VK_ACCESS_TRANSFER_WRITE_BIT,
       VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
       VK_PIPELINE_STAGE_TRANSFER_BIT, imageMemoryBarrier.subresourceRange);
 
   insert_image_memory_barrier(
-      commandBuffer, m_ImageHandle, VK_ACCESS_TRANSFER_WRITE_BIT,
+      *commandBuffer, m_ImageHandle, VK_ACCESS_TRANSFER_WRITE_BIT,
       VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
       VK_PIPELINE_STAGE_TRANSFER_BIT, imageMemoryBarrier.subresourceRange);
 
-  VulkanApp::GetInstance()->EndRecordingSingleTimeUseCommands(commandBuffer,
-                                                              false);
+  if (const auto result{end_single_time_commands(commands, *commandBuffer)};
+      !result) {
+    return std::unexpected(result.error());
+  }
 
   const VkImageViewCreateInfo imageViewCreateInfo{
       .sType{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO},

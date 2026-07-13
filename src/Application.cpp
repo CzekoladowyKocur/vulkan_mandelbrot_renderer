@@ -46,8 +46,8 @@ VulkanApp::VulkanApp(const ERenderMethod renderMethod)
       m_ComputeCommandPool(VK_NULL_HANDLE), m_Swapchain(VK_NULL_HANDLE),
       m_SurfaceCapabilities(), m_SurfaceFormat(), m_PresentMode(),
       m_SwapchainExtent({.width{1280}, .height{720}}), m_Semaphores(),
-      m_MaxFramesInFlight(2), m_ImageCount(0), m_MinimalImageCount(0),
-      m_SwapchainImages(), m_SwapchainImageViews(), m_SwapchainFramebuffers(),
+      m_MaxFramesInFlight(2), m_ImageCount(0), m_SwapchainImages(),
+      m_SwapchainImageViews(), m_SwapchainFramebuffers(),
       m_SwapchainRenderPass(VK_NULL_HANDLE), m_VertexBuffer(), m_IndexBuffer(),
       m_UBOBuffer(), m_VertexShaderModule(VK_NULL_HANDLE),
       m_FragmentShaderModule(VK_NULL_HANDLE),
@@ -848,7 +848,9 @@ bool VulkanApp::LoadAssets() {
 
   auto palette{texture_2d::create({.image{*palette_image},
                                    .device{m_LogicalDevice},
-                                   .physical_device{m_PhysicalDevice}})};
+                                   .physical_device{m_PhysicalDevice},
+                                   .command_pool{m_GraphicsCommandPool},
+                                   .queue{m_GraphicsQueue}})};
   if (!palette) {
     return false;
   }
@@ -951,15 +953,26 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     vkBindBufferMemory(m_LogicalDevice, m_VertexBuffer.Handle,
                        m_VertexBuffer.DeviceMemory, 0);
 
-    VkCommandBuffer commandBuffer = BeginRecordingSingleTimeUseCommands(false);
+    const single_time_command_context context{
+        .device{m_LogicalDevice},
+        .command_pool{m_GraphicsCommandPool},
+        .queue{m_GraphicsQueue}};
+
+    const auto commandBuffer{begin_single_time_commands(context)};
+    if (!commandBuffer) {
+      return false;
+    }
+
     VkBufferCopy bufferCopyRegion;
     bufferCopyRegion.size = vertexBufferSize;
     bufferCopyRegion.srcOffset = 0;
     bufferCopyRegion.dstOffset = 0;
 
-    vkCmdCopyBuffer(commandBuffer, vertexStagingBuffer, m_VertexBuffer.Handle,
+    vkCmdCopyBuffer(*commandBuffer, vertexStagingBuffer, m_VertexBuffer.Handle,
                     1, &bufferCopyRegion);
-    EndRecordingSingleTimeUseCommands(commandBuffer, false);
+    if (!end_single_time_commands(context, *commandBuffer)) {
+      return false;
+    }
 
     vkFreeMemory(m_LogicalDevice, vertexStagingBufferMemory, nullptr);
 
@@ -1039,15 +1052,26 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
     vkBindBufferMemory(m_LogicalDevice, m_IndexBuffer.Handle,
                        m_IndexBuffer.DeviceMemory, 0);
 
-    VkCommandBuffer commandBuffer = BeginRecordingSingleTimeUseCommands(false);
+    const single_time_command_context context{
+        .device{m_LogicalDevice},
+        .command_pool{m_GraphicsCommandPool},
+        .queue{m_GraphicsQueue}};
+
+    const auto commandBuffer{begin_single_time_commands(context)};
+    if (!commandBuffer) {
+      return false;
+    }
+
     VkBufferCopy bufferCopyRegion;
     bufferCopyRegion.size = indexBufferSize;
     bufferCopyRegion.srcOffset = 0;
     bufferCopyRegion.dstOffset = 0;
 
-    vkCmdCopyBuffer(commandBuffer, stagingIndexBuffer, m_IndexBuffer.Handle, 1,
+    vkCmdCopyBuffer(*commandBuffer, stagingIndexBuffer, m_IndexBuffer.Handle, 1,
                     &bufferCopyRegion);
-    EndRecordingSingleTimeUseCommands(commandBuffer, false);
+    if (!end_single_time_commands(context, *commandBuffer)) {
+      return false;
+    }
 
     vkFreeMemory(m_LogicalDevice, stagingIndexBufferMemory, nullptr);
 
@@ -1980,68 +2004,6 @@ void VulkanApp::CleanupSwapchain() {
   }
 
   vkDestroySwapchainKHR(m_LogicalDevice, m_Swapchain, nullptr);
-}
-
-VkCommandBuffer
-VulkanApp::BeginRecordingSingleTimeUseCommands(const bool compute) {
-  VkCommandBufferAllocateInfo commandBufferAllocateInfo;
-  commandBufferAllocateInfo.sType =
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  commandBufferAllocateInfo.commandPool =
-      compute ? m_ComputeCommandPool : m_GraphicsCommandPool;
-  commandBufferAllocateInfo.commandBufferCount = 1;
-  commandBufferAllocateInfo.pNext = nullptr;
-
-  VkCommandBuffer commandBuffer;
-  VK_CHECK(vkAllocateCommandBuffers(m_LogicalDevice, &commandBufferAllocateInfo,
-                                    &commandBuffer));
-
-  VkCommandBufferBeginInfo commandBufferBeginInfo;
-  commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  commandBufferBeginInfo.pInheritanceInfo = nullptr;
-  commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-  commandBufferBeginInfo.pNext = nullptr;
-
-  VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-
-  return commandBuffer;
-}
-
-void VulkanApp::EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer,
-                                                  const bool compute) {
-  VK_CHECK(vkEndCommandBuffer(commandBuffer));
-
-  VkFence commandBufferFinishedExecutionFence;
-  VkFenceCreateInfo fenceCreateInfo;
-  fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  fenceCreateInfo.flags = 0;
-  fenceCreateInfo.pNext = nullptr;
-
-  VK_CHECK(vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr,
-                         &commandBufferFinishedExecutionFence));
-
-  const std::array<VkPipelineStageFlags, 1ull> waitStages = {
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT};
-  VkSubmitInfo submitInfo;
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &commandBuffer;
-  submitInfo.waitSemaphoreCount = 0;
-  submitInfo.pWaitSemaphores = nullptr;
-  submitInfo.signalSemaphoreCount = 0;
-  submitInfo.pSignalSemaphores = nullptr;
-  submitInfo.pWaitDstStageMask = waitStages.data();
-  submitInfo.pNext = nullptr;
-
-  VK_CHECK(vkQueueSubmit(compute ? m_ComputeQueue : m_GraphicsQueue, 1,
-                         &submitInfo, commandBufferFinishedExecutionFence));
-
-  VK_CHECK(vkWaitForFences(m_LogicalDevice, 1,
-                           &commandBufferFinishedExecutionFence, VK_FALSE,
-                           UINT64_MAX));
-
-  vkDestroyFence(m_LogicalDevice, commandBufferFinishedExecutionFence, nullptr);
 }
 
 VulkanApp::QueueFamilyIndices VulkanApp::GetQueueFamilyIndices(int32_t flags) {
