@@ -1124,6 +1124,13 @@ realtime_mandelbrot_application::draw_frame(
     const vulkan_context &context, swapchain_resources &swapchain,
     const graphics_command_buffers &command_buffers,
     std::uint32_t &frame_index) {
+  if (const VkResult result{vkWaitForFences(
+          context.device(), 1, &swapchain.in_flight_fences[frame_index],
+          VK_TRUE, UINT64_MAX)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
   std::uint32_t image_index{0u};
   const VkResult acquire_result{vkAcquireNextImageKHR(
       context.device(), swapchain.swapchain, max_swapchain_timeout,
