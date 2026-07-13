@@ -67,7 +67,7 @@ VulkanApp::VulkanApp(const ERenderMethod renderMethod)
       m_ComputePipelineLayout(VK_NULL_HANDLE),
       m_ComputePipelineCommandBuffer(VK_NULL_HANDLE), m_ImageIndex(0),
       m_FrameIndex(0), m_InFlightFences(), m_ImagesInFlight(),
-      m_ColorPaletteImage(std::nullopt)
+      m_ColorPaletteTexture(std::nullopt)
 #ifdef APP_DEBUG
       ,
       m_DebugReportCallback(VK_NULL_HANDLE)
@@ -188,7 +188,7 @@ bool VulkanApp::Run() {
 
 bool VulkanApp::Shutdown() {
   VK_CHECK(vkDeviceWaitIdle(m_LogicalDevice));
-  m_ColorPaletteImage.reset();
+  m_ColorPaletteTexture.reset();
   /* Device level */
   VK_CHECK(vkDeviceWaitIdle(m_LogicalDevice));
 
@@ -841,18 +841,17 @@ bool VulkanApp::CreateSwapchain() {
 }
 
 bool VulkanApp::LoadAssets() {
-  const auto palette_data{
-      image_data::load_from_file("assets/images/violetPalette.bmp")};
-  if (!palette_data) {
+  const auto palette_image{image_2d::create("assets/images/violetPalette.bmp")};
+  if (!palette_image) {
     return false;
   }
 
-  auto palette{image_2d::create({.data{*palette_data}})};
+  auto palette{texture_2d::create({.image{*palette_image}})};
   if (!palette) {
     return false;
   }
 
-  m_ColorPaletteImage.emplace(std::move(*palette));
+  m_ColorPaletteTexture.emplace(std::move(*palette));
 
   return true;
 }
@@ -1249,14 +1248,14 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   pipelineLayoutInfo.flags = 0;
   pipelineLayoutInfo.pNext = nullptr;
 
-  if (!m_ColorPaletteImage.has_value()) {
+  if (!m_ColorPaletteTexture.has_value()) {
     return false;
   }
 
   VkDescriptorImageInfo imageInfo;
   imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  imageInfo.imageView = m_ColorPaletteImage->GetImageView();
-  imageInfo.sampler = m_ColorPaletteImage->GetImageSampler();
+  imageInfo.imageView = m_ColorPaletteTexture->GetImageView();
+  imageInfo.sampler = m_ColorPaletteTexture->GetImageSampler();
 
   VkDescriptorPoolSize uboBufferdescriptorPoolSize;
   uboBufferdescriptorPoolSize.descriptorCount = 1;

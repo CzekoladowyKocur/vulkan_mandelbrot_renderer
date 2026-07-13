@@ -1,85 +1,35 @@
-#pragma warning(push, 0)
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#endif
-
-#include <stb_image.h>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-#pragma warning(pop)
-
 #include "include/Application.hpp"
-#include "include/Image2D.hpp"
+#include "include/Texture2D.hpp"
 #include <cstring>
 #include <memory>
 #include <utility>
 
-std::expected<image_data, std::error_code>
-image_data::load_from_file(const std::filesystem::path &path) noexcept {
+std::expected<texture_2d, std::error_code>
+texture_2d::create(const texture_2d_props &props) noexcept {
   try {
-    if (!std::filesystem::exists(path)) {
-      return std::unexpected(
-          std::make_error_code(std::errc::no_such_file_or_directory));
-    }
-
-    std::int32_t width{};
-    std::int32_t height{};
-    std::int32_t channel_count{};
-
-    stbi_uc *const pixel_data{stbi_load(path.string().c_str(), &width, &height,
-                                        &channel_count, STBI_rgb_alpha)};
-    if (!pixel_data) {
-      return std::unexpected(std::make_error_code(std::errc::io_error));
-    }
-
-    constexpr auto size_of_pixel{4uz};
-    const auto byte_count{static_cast<std::size_t>(width) *
-                          static_cast<std::size_t>(height) * size_of_pixel};
-
-    const auto *const pixel_bytes{
-        reinterpret_cast<const std::byte *>(pixel_data)};
-
-    image_data data{.width{static_cast<std::uint32_t>(width)},
-                    .height{static_cast<std::uint32_t>(height)},
-                    .pixels{pixel_bytes, pixel_bytes + byte_count}};
-
-    stbi_image_free(pixel_data);
-
-    return data;
-  } catch (...) {
-    return std::unexpected(std::make_error_code(std::errc::io_error));
-  }
-}
-
-std::expected<image_2d, std::error_code>
-image_2d::create(const image_2d_props &props) noexcept {
-  try {
-    if (props.data.pixels.empty()) {
+    if (props.image.pixels.empty()) {
       return std::unexpected(std::make_error_code(std::errc::invalid_argument));
     }
 
-    image_2d image{};
-    if (const auto result{image.initialize(props)}; !result) {
+    texture_2d texture{};
+    if (const auto result{texture.initialize(props)}; !result) {
       return std::unexpected(result.error());
     }
 
-    return image;
+    return texture;
   } catch (...) {
     return std::unexpected(std::make_error_code(std::errc::io_error));
   }
 }
 
 std::expected<void, std::error_code>
-image_2d::initialize(const image_2d_props &props) {
-  m_width = props.data.width;
-  m_height = props.data.height;
+texture_2d::initialize(const texture_2d_props &props) {
+  m_width = props.image.width;
+  m_height = props.image.height;
 
   const VkDevice device{VulkanApp::GetInstance()->m_LogicalDevice};
-  const VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
-  const VkDeviceSize pixelByteCount{props.data.pixels.size()};
+  constexpr VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
+  const VkDeviceSize pixelByteCount{props.image.pixels.size()};
 
   struct staging_resources final {
     VkDevice device{VK_NULL_HANDLE};
@@ -101,9 +51,9 @@ image_2d::initialize(const image_2d_props &props) {
 
   staging_resources staging{device};
 
-  const VkImageUsageFlags imageUsageFlags{VK_IMAGE_USAGE_SAMPLED_BIT |
-                                          VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT};
+  constexpr VkImageUsageFlags imageUsageFlags{VK_IMAGE_USAGE_SAMPLED_BIT |
+                                              VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT};
 
   const VkImageCreateInfo imageCreateInfo{
       .sType{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO},
@@ -175,7 +125,8 @@ image_2d::initialize(const image_2d_props &props) {
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
-    std::memcpy(data, props.data.pixels.data(), props.data.pixels.size());
+
+    std::memcpy(data, props.image.pixels.data(), props.image.pixels.size());
     vkUnmapMemory(device, staging.memory);
   }
 
@@ -309,7 +260,7 @@ image_2d::initialize(const image_2d_props &props) {
   return {};
 }
 
-image_2d::image_2d(image_2d &&other) noexcept
+texture_2d::texture_2d(texture_2d &&other) noexcept
     : m_width{other.m_width}, m_height{other.m_height},
       m_ImageHandle{other.m_ImageHandle}, m_ImageMemory{other.m_ImageMemory},
       m_ImageView{other.m_ImageView}, m_Sampler{other.m_Sampler} {
@@ -321,7 +272,7 @@ image_2d::image_2d(image_2d &&other) noexcept
   other.m_Sampler = VK_NULL_HANDLE;
 }
 
-image_2d &image_2d::operator=(image_2d &&other) noexcept {
+texture_2d &texture_2d::operator=(texture_2d &&other) noexcept {
   if (this == std::addressof(other)) {
     return *this;
   }
@@ -341,12 +292,13 @@ image_2d &image_2d::operator=(image_2d &&other) noexcept {
   other.m_ImageMemory = VK_NULL_HANDLE;
   other.m_ImageView = VK_NULL_HANDLE;
   other.m_Sampler = VK_NULL_HANDLE;
+
   return *this;
 }
 
-image_2d::~image_2d() { destroy(); }
+texture_2d::~texture_2d() { destroy(); }
 
-void image_2d::destroy() noexcept {
+void texture_2d::destroy() noexcept {
   const VkDevice device{VulkanApp::GetInstance()->m_LogicalDevice};
 
   vkDestroySampler(device, m_Sampler, nullptr);
@@ -362,8 +314,8 @@ void image_2d::destroy() noexcept {
   m_ImageHandle = VK_NULL_HANDLE;
 }
 
-VkImage image_2d::GetImageHandle() const noexcept { return m_ImageHandle; }
+VkImage texture_2d::GetImageHandle() const noexcept { return m_ImageHandle; }
 
-VkImageView image_2d::GetImageView() const noexcept { return m_ImageView; }
+VkImageView texture_2d::GetImageView() const noexcept { return m_ImageView; }
 
-VkSampler image_2d::GetImageSampler() const noexcept { return m_Sampler; }
+VkSampler texture_2d::GetImageSampler() const noexcept { return m_Sampler; }

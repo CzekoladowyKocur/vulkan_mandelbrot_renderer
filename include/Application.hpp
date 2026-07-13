@@ -1,5 +1,5 @@
 #pragma once
-#include "include/Image2D.hpp"
+#include "include/Texture2D.hpp"
 #include "include/VulkanTypes.hpp"
 #include "include/window.hpp"
 #include <cstdint>
@@ -186,7 +186,7 @@ private:
   std::vector<VkFence> m_ImagesInFlight;
 
   /* Assets */
-  std::optional<image_2d> m_ColorPaletteImage;
+  std::optional<texture_2d> m_ColorPaletteTexture;
 
   /* Debug */
 #ifdef APP_DEBUG
@@ -196,5 +196,5 @@ private:
   static VulkanApp *s_ApplicationInstance;
 
 private:
-  friend class image_2d;
+  friend class texture_2d;
 };
