@@ -14,10 +14,28 @@ if [ $FORMAT_STATUS -ne 0 ]; then
 	exit $FORMAT_STATUS
 fi
 
-TIDY_FILES=$(echo "$FILES" | grep '\.cpp$')
+COMPILE_DB_DIR=""
+for CANDIDATE in build/ninja build/macos; do
+	if [ -f "$CANDIDATE/compile_commands.json" ]; then
+		COMPILE_DB_DIR=$CANDIDATE
+		break
+	fi
+done
+
+if [ -z "$COMPILE_DB_DIR" ]; then
+	echo "pre-commit: no compile_commands.json found, skipping clang-tidy" >&2
+	exit 0
+fi
+
+TIDY_FILES=""
+for FILE in $(echo "$FILES" | grep '\.cpp$'); do
+	if grep -q "$FILE" "$COMPILE_DB_DIR/compile_commands.json"; then
+		TIDY_FILES="$TIDY_FILES $FILE"
+	fi
+done
 
 if [ -n "$TIDY_FILES" ]; then
-	clang-tidy --quiet -p=build/ninja $TIDY_FILES
+	clang-tidy --quiet -p=$COMPILE_DB_DIR $TIDY_FILES
 	TIDY_STATUS=$?
 else
 	TIDY_STATUS=0
