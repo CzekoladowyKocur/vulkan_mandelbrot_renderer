@@ -1,10 +1,15 @@
 # Vulkan Mandelbrot Renderer
 
-[![CI](https://github.com/martin-swe-fs/vulkan_mandelbrot_renderer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/martin-swe-fs/vulkan_mandelbrot_renderer/actions/workflows/ci.yml)
+[![CI](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/actions/workflows/ci.yml)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS-blue)
 ![Compilers](https://img.shields.io/badge/compilers-MSVC%20%7C%20clang--cl%20%7C%20AppleClang-blue)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
 ![Vulkan](https://img.shields.io/badge/Vulkan-1.3%2B-red)
+
+> **Note:** Started in 2022 as a Windows-only Vulkan renderer. Revisited in 2026 and modernized
+> end to end: C++17 → C++23, cross-platform (Windows/macOS with a native Cocoa backend),
+> CI for MSVC and clang-cl, enforced clang-tidy/clang-format, and an offline
+> compute-shader rendering path.
 
 A cross-platform (Windows/macOS) real-time Mandelbrot set renderer written in C++23 and Vulkan,
 with interactive navigation and offline rendering to PNG using compute shaders.
