@@ -1,34 +1,9 @@
-#include <Windows.h>
-#include <shellapi.h>
-
-#include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <print>
 #include <string_view>
-#include <vulkan/vulkan.h>
 
 #include "include/compute_mandelbrot_application.hpp"
 #include "include/realtime_mandelbrot_application.hpp"
-
-[[nodiscard]] static bool parse_compute_flag() noexcept {
-  int argument_count{0};
-  wchar_t **const arguments{
-      ::CommandLineToArgvW(::GetCommandLineW(), &argument_count)};
-  if (arguments == nullptr) {
-    return false;
-  }
-
-  bool compute{false};
-  for (int i{1}; i < argument_count; ++i) {
-    if (std::wstring_view{arguments[i]} == L"--compute") {
-      compute = true;
-    }
-  }
-
-  ::LocalFree(static_cast<HLOCAL>(static_cast<void *>(arguments)));
-  return compute;
-}
 
 [[nodiscard]] static int vulkan_app_main(const bool compute) {
   if (compute) {
@@ -51,6 +26,32 @@
 
   std::println("Shutting down. . .");
   return EXIT_SUCCESS;
+}
+
+#ifndef _WIN32
+#error unsupported platform
+#endif
+
+#include <Windows.h>
+#include <shellapi.h>
+
+[[nodiscard]] static bool parse_compute_flag() noexcept {
+  int argument_count{0};
+  wchar_t **const arguments{
+      ::CommandLineToArgvW(::GetCommandLineW(), &argument_count)};
+  if (arguments == nullptr) {
+    return false;
+  }
+
+  bool compute{false};
+  for (int i{1}; i < argument_count; ++i) {
+    if (std::wstring_view{arguments[i]} == L"--compute") {
+      compute = true;
+    }
+  }
+
+  ::LocalFree(static_cast<HLOCAL>(static_cast<void *>(arguments)));
+  return compute;
 }
 
 #undef APIENTRY
