@@ -11,7 +11,7 @@
 #endif
 #pragma warning(pop)
 
-#include "include/Image2D.hpp"
+#include "include/image_2d.hpp"
 
 std::expected<image_2d, std::error_code>
 image_2d::create(const std::filesystem::path &path) noexcept {

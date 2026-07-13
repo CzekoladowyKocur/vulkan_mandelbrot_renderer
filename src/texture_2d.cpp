@@ -1,5 +1,5 @@
+#include "include/texture_2d.hpp"
 #include "include/Application.hpp"
-#include "include/Texture2D.hpp"
 #include <cstring>
 #include <memory>
 #include <utility>

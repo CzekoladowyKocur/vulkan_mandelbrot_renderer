@@ -1,6 +1,6 @@
 #pragma once
-#include "include/Texture2D.hpp"
 #include "include/VulkanTypes.hpp"
+#include "include/texture_2d.hpp"
 #include "include/window.hpp"
 #include <cstdint>
 #include <optional>
