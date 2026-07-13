@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-class VulkanApp {
+class realtime_mandelbrot_application {
 public:
   bool Initialize();
   bool Run();

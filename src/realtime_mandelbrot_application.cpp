@@ -1,4 +1,4 @@
-#include "include/application.hpp"
+#include "include/realtime_mandelbrot_application.hpp"
 #include "include/input.hpp"
 #include <algorithm>
 #include <array>
@@ -17,7 +17,7 @@ namespace Utilities {
 constexpr uint64_t MaxSwapchainTimeout = UINT64_MAX;
 } // namespace Utilities
 
-bool VulkanApp::Initialize() {
+bool realtime_mandelbrot_application::Initialize() {
   auto context{vulkan_context::create(
       {.instance_extensions{window::get_required_extensions()}})};
   if (!context) {
@@ -74,7 +74,7 @@ bool VulkanApp::Initialize() {
   return true;
 }
 
-bool VulkanApp::Run() {
+bool realtime_mandelbrot_application::Run() {
   if (!m_window.has_value()) {
     return false;
   }
@@ -98,7 +98,7 @@ bool VulkanApp::Run() {
   return true;
 }
 
-bool VulkanApp::Shutdown() {
+bool realtime_mandelbrot_application::Shutdown() {
   VK_CHECK(vkDeviceWaitIdle(m_Context.device()));
   m_ColorPaletteTexture.reset();
   /* Device level */
@@ -146,7 +146,7 @@ bool VulkanApp::Shutdown() {
   return true;
 }
 
-void VulkanApp::OnEvent(const event &polled_event) {
+void realtime_mandelbrot_application::OnEvent(const event &polled_event) {
   std::visit(overloaded{
                  [this](const window_close_event &) { m_Running = false; },
 
@@ -171,7 +171,7 @@ void VulkanApp::OnEvent(const event &polled_event) {
              polled_event);
 }
 
-bool VulkanApp::CreateSurface() {
+bool realtime_mandelbrot_application::CreateSurface() {
   if (!m_window.has_value()) {
     return false;
   }
@@ -196,7 +196,7 @@ bool VulkanApp::CreateSurface() {
 using b8 = bool;
 using u32 = uint32_t;
 
-bool VulkanApp::CreateSwapchain() {
+bool realtime_mandelbrot_application::CreateSwapchain() {
   VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
       m_Context.physical_device(), m_Surface, &m_SurfaceCapabilities));
 
@@ -422,7 +422,7 @@ bool VulkanApp::CreateSwapchain() {
   return true;
 }
 
-bool VulkanApp::LoadAssets() {
+bool realtime_mandelbrot_application::LoadAssets() {
   const auto palette_image{image_2d::create("assets/images/violetPalette.bmp")};
   if (!palette_image) {
     return false;
@@ -443,7 +443,7 @@ bool VulkanApp::LoadAssets() {
   return true;
 }
 
-bool VulkanApp::CreateGraphicsBasedPipeline() {
+bool realtime_mandelbrot_application::CreateGraphicsBasedPipeline() {
   constexpr VkDeviceSize vertexBufferSize = sizeof(float) * 4 * 3;
   constexpr VkDeviceSize indexBufferSize = sizeof(uint32_t) * 6;
 
@@ -887,7 +887,7 @@ bool VulkanApp::CreateGraphicsBasedPipeline() {
   return true;
 }
 
-bool VulkanApp::AllocateGraphicsCommandBuffers() {
+bool realtime_mandelbrot_application::AllocateGraphicsCommandBuffers() {
   VkCommandBufferAllocateInfo commandBufferAllocateInfo;
   commandBufferAllocateInfo.sType =
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -904,7 +904,7 @@ bool VulkanApp::AllocateGraphicsCommandBuffers() {
   return true;
 }
 
-bool VulkanApp::RecordGraphicsCommandBuffers() {
+bool realtime_mandelbrot_application::RecordGraphicsCommandBuffers() {
   if (!m_VertexBuffer.has_value() || !m_IndexBuffer.has_value()) {
     return false;
   }
@@ -980,7 +980,7 @@ bool VulkanApp::RecordGraphicsCommandBuffers() {
   return true;
 }
 
-void VulkanApp::UpdateFrameData(const float deltaTime) {
+void realtime_mandelbrot_application::UpdateFrameData(const float deltaTime) {
   static float zoomScale = 1.0f;
   if (!m_window.has_value()) {
     return;
@@ -1067,7 +1067,7 @@ void VulkanApp::UpdateFrameData(const float deltaTime) {
   uboBufferDescriptorSetWrite.pNext = nullptr;
 }
 
-void VulkanApp::DrawFrame() {
+void realtime_mandelbrot_application::DrawFrame() {
   VkResult result = vkAcquireNextImageKHR(
       m_Context.device(), m_Swapchain, Utilities::MaxSwapchainTimeout,
       m_Semaphores.PresentComplete[m_FrameIndex], VK_NULL_HANDLE,
@@ -1126,7 +1126,8 @@ void VulkanApp::DrawFrame() {
   m_FrameIndex = (m_FrameIndex + 1) % m_MaxFramesInFlight;
 }
 
-void VulkanApp::RecreateSwapchain(const uint32_t width, const uint32_t height) {
+void realtime_mandelbrot_application::RecreateSwapchain(const uint32_t width,
+                                                        const uint32_t height) {
   m_SwapchainExtent.width = width;
   m_SwapchainExtent.height = height;
 
@@ -1148,7 +1149,7 @@ void VulkanApp::RecreateSwapchain(const uint32_t width, const uint32_t height) {
   RecordGraphicsCommandBuffers();
 }
 
-void VulkanApp::CleanupSwapchain() {
+void realtime_mandelbrot_application::CleanupSwapchain() {
   vkDestroyRenderPass(m_Context.device(), m_SwapchainRenderPass, nullptr);
 
   for (uint32_t i = 0; i < m_ImageCount; ++i) {

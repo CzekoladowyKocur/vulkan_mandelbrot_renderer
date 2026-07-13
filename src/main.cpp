@@ -9,8 +9,8 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
-#include "include/application.hpp"
 #include "include/compute_mandelbrot_application.hpp"
+#include "include/realtime_mandelbrot_application.hpp"
 
 [[nodiscard]] static bool parse_compute_flag() noexcept {
   int argument_count{0};
@@ -43,7 +43,7 @@
     return EXIT_SUCCESS;
   }
 
-  const auto application{std::make_unique<VulkanApp>()};
+  const auto application{std::make_unique<realtime_mandelbrot_application>()};
 
   if (!application->Initialize()) {
     std::println("Failed to initialize application");
