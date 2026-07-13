@@ -1,5 +1,5 @@
-#include "include\Application.hpp"
-#include "include\input.hpp"
+#include "include/application.hpp"
+#include "include/input.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -35,45 +35,7 @@ constexpr std::size_t RenderedImageSize =
 } // namespace Utilities
 
 VulkanApp::VulkanApp(const ERenderMethod renderMethod)
-    : m_RenderMethod(renderMethod), m_Running(true), m_window(std::nullopt),
-      /* Vulkan API */
-      m_Instance(VK_NULL_HANDLE), m_Surface(VK_NULL_HANDLE),
-      m_PhysicalDeviceProperties(), m_PhysicalDeviceFeatures(),
-      m_PhysicalDeviceMemoryProperties(), m_PhysicalDevice(VK_NULL_HANDLE),
-      m_QueueIndices(), m_LogicalDevice(VK_NULL_HANDLE),
-      m_GraphicsQueue(VK_NULL_HANDLE), m_ComputeQueue(VK_NULL_HANDLE),
-      m_PresentQueue(VK_NULL_HANDLE), m_GraphicsCommandPool(VK_NULL_HANDLE),
-      m_ComputeCommandPool(VK_NULL_HANDLE), m_Swapchain(VK_NULL_HANDLE),
-      m_SurfaceCapabilities(), m_SurfaceFormat(), m_PresentMode(),
-      m_SwapchainExtent({.width{1280}, .height{720}}), m_Semaphores(),
-      m_MaxFramesInFlight(2), m_ImageCount(0), m_SwapchainImages(),
-      m_SwapchainImageViews(), m_SwapchainFramebuffers(),
-      m_SwapchainRenderPass(VK_NULL_HANDLE), m_VertexBuffer(), m_IndexBuffer(),
-      m_UBOBuffer(), m_VertexShaderModule(VK_NULL_HANDLE),
-      m_FragmentShaderModule(VK_NULL_HANDLE),
-      m_GraphicsPipeline(VK_NULL_HANDLE),
-      m_GraphicsPipelineLayout(VK_NULL_HANDLE),
-      m_GraphicsPipelineUBOBufferDescriptorSetLayout(VK_NULL_HANDLE),
-      m_GraphicsPipelineColorPaletteDescriptorSetLayout(VK_NULL_HANDLE),
-      m_GraphicsPipelineDescriptorPool(VK_NULL_HANDLE),
-      m_GraphicsPipelineUBOBufferDescriptorSet(VK_NULL_HANDLE),
-      m_GraphicsPipelineColorPaletteDescriptorSet(VK_NULL_HANDLE),
-      m_GraphicsPipelineCommandBuffers(), m_ComputePipelineStorageBuffer(),
-      m_ComputeShaderModule(VK_NULL_HANDLE),
-      m_ComputePipelineDescriptorSetLayout(VK_NULL_HANDLE),
-      m_ComputePipelineDescriptorPool(VK_NULL_HANDLE),
-      m_ComputePipelineStorageBufferDescriptorSet(VK_NULL_HANDLE),
-      m_ComputePipeline(VK_NULL_HANDLE),
-      m_ComputePipelineLayout(VK_NULL_HANDLE),
-      m_ComputePipelineCommandBuffer(VK_NULL_HANDLE), m_ImageIndex(0),
-      m_FrameIndex(0), m_InFlightFences(), m_ImagesInFlight(),
-      m_ColorPaletteTexture(std::nullopt)
-#ifdef APP_DEBUG
-      ,
-      m_DebugReportCallback(VK_NULL_HANDLE)
-#endif
-{
-}
+    : m_RenderMethod{renderMethod} {}
 
 VulkanApp::~VulkanApp() {
   m_Running = false;

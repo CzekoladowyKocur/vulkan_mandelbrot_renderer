@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
-#include "include/Application.hpp"
+#include "include/application.hpp"
 
 [[nodiscard]] static VulkanApp::ERenderMethod parse_render_method() noexcept {
   int argument_count{0};
