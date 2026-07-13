@@ -346,8 +346,8 @@ void texture_2d::destroy() noexcept {
   m_ImageHandle = VK_NULL_HANDLE;
 }
 
-VkImage texture_2d::GetImageHandle() const noexcept { return m_ImageHandle; }
+VkImage texture_2d::image_handle() const noexcept { return m_ImageHandle; }
 
-VkImageView texture_2d::GetImageView() const noexcept { return m_ImageView; }
+VkImageView texture_2d::image_view() const noexcept { return m_ImageView; }
 
-VkSampler texture_2d::GetImageSampler() const noexcept { return m_Sampler; }
+VkSampler texture_2d::sampler() const noexcept { return m_Sampler; }

@@ -30,9 +30,9 @@ public:
 
   ~texture_2d();
 
-  [[nodiscard]] VkImage GetImageHandle() const noexcept;
-  [[nodiscard]] VkImageView GetImageView() const noexcept;
-  [[nodiscard]] VkSampler GetImageSampler() const noexcept;
+  [[nodiscard]] VkImage image_handle() const noexcept;
+  [[nodiscard]] VkImageView image_view() const noexcept;
+  [[nodiscard]] VkSampler sampler() const noexcept;
 
 private:
   texture_2d(const std::uint32_t width, const std::uint32_t height,
