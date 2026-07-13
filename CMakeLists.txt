@@ -45,6 +45,7 @@ add_executable(vulkan_mandelbrot_renderer
 
 if(WIN32)
 	target_sources(vulkan_mandelbrot_renderer PRIVATE
+		src/platform/win32/entry_win32.cpp
 		src/platform/win32/window_win32.cpp
 	)
 endif()
