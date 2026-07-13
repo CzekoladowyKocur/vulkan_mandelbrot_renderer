@@ -9,6 +9,8 @@ struct texture_2d_sampler_props final {
 
 struct texture_2d_props final {
   const image_2d &image;
+  VkDevice device{VK_NULL_HANDLE};
+  VkPhysicalDevice physical_device{VK_NULL_HANDLE};
   texture_2d_sampler_props sampler{};
 };
 
@@ -31,16 +33,20 @@ public:
   [[nodiscard]] VkSampler GetImageSampler() const noexcept;
 
 private:
-  texture_2d() = default;
+  texture_2d(const std::uint32_t width, const std::uint32_t height,
+             const VkDevice device) noexcept;
 
   [[nodiscard]] std::expected<void, std::error_code>
-  initialize(const texture_2d_props &props);
+  initialize(const image_2d &image, const VkPhysicalDevice physical_device,
+             const texture_2d_sampler_props &sampler);
 
   void destroy() noexcept;
 
 private:
   std::uint32_t m_width{};
   std::uint32_t m_height{};
+
+  VkDevice m_device{VK_NULL_HANDLE};
 
   VkImage m_ImageHandle{VK_NULL_HANDLE};
   VkDeviceMemory m_ImageMemory{VK_NULL_HANDLE};

@@ -7,12 +7,15 @@
 std::expected<texture_2d, std::error_code>
 texture_2d::create(const texture_2d_props &props) noexcept {
   try {
-    if (props.image.pixels.empty()) {
+    if (props.image.pixels.empty() || props.device == VK_NULL_HANDLE ||
+        props.physical_device == VK_NULL_HANDLE) {
       return std::unexpected(std::make_error_code(std::errc::invalid_argument));
     }
 
-    texture_2d texture{};
-    if (const auto result{texture.initialize(props)}; !result) {
+    texture_2d texture{props.image.width, props.image.height, props.device};
+    if (const auto result{texture.initialize(props.image, props.physical_device,
+                                             props.sampler)};
+        !result) {
       return std::unexpected(result.error());
     }
 
@@ -22,14 +25,16 @@ texture_2d::create(const texture_2d_props &props) noexcept {
   }
 }
 
-std::expected<void, std::error_code>
-texture_2d::initialize(const texture_2d_props &props) {
-  m_width = props.image.width;
-  m_height = props.image.height;
+texture_2d::texture_2d(const std::uint32_t width, const std::uint32_t height,
+                       const VkDevice device) noexcept
+    : m_width{width}, m_height{height}, m_device{device} {}
 
-  const VkDevice device{VulkanApp::GetInstance()->m_LogicalDevice};
+std::expected<void, std::error_code>
+texture_2d::initialize(const image_2d &image,
+                       const VkPhysicalDevice physical_device,
+                       const texture_2d_sampler_props &sampler) {
   constexpr VkFormat format{VK_FORMAT_R8G8B8A8_UNORM};
-  const VkDeviceSize pixelByteCount{props.image.pixels.size()};
+  const VkDeviceSize pixelByteCount{image.pixels.size()};
 
   struct staging_resources final {
     VkDevice device{VK_NULL_HANDLE};
@@ -49,7 +54,7 @@ texture_2d::initialize(const texture_2d_props &props) {
     }
   };
 
-  staging_resources staging{device};
+  staging_resources staging{m_device};
 
   constexpr VkImageUsageFlags imageUsageFlags{VK_IMAGE_USAGE_SAMPLED_BIT |
                                               VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -73,7 +78,7 @@ texture_2d::initialize(const texture_2d_props &props) {
       .initialLayout{VK_IMAGE_LAYOUT_UNDEFINED}};
 
   if (const VkResult result{
-          vkCreateImage(device, &imageCreateInfo, nullptr, &m_ImageHandle)};
+          vkCreateImage(m_device, &imageCreateInfo, nullptr, &m_ImageHandle)};
       result != VK_SUCCESS) {
     return make_vulkan_error(result);
   }
@@ -89,67 +94,67 @@ texture_2d::initialize(const texture_2d_props &props) {
         .queueFamilyIndexCount{VK_QUEUE_FAMILY_IGNORED},
         .pQueueFamilyIndices{nullptr}};
 
-    if (const VkResult result{vkCreateBuffer(device, &stagingBufferCreateInfo,
+    if (const VkResult result{vkCreateBuffer(m_device, &stagingBufferCreateInfo,
                                              nullptr, &staging.buffer)};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
 
     VkMemoryRequirements stagingBufferMemoryRequirements{};
-    vkGetBufferMemoryRequirements(device, staging.buffer,
+    vkGetBufferMemoryRequirements(m_device, staging.buffer,
                                   &stagingBufferMemoryRequirements);
 
     const VkMemoryAllocateInfo allocateInfo{
         .sType{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO},
         .pNext{nullptr},
         .allocationSize{stagingBufferMemoryRequirements.size},
-        .memoryTypeIndex{VulkanApp::GetInstance()->RetrieveMemoryTypeIndex(
-            stagingBufferMemoryRequirements.memoryTypeBits,
+        .memoryTypeIndex{retrieve_memory_type_index(
+            physical_device, stagingBufferMemoryRequirements.memoryTypeBits,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)}};
 
-    if (const VkResult result{
-            vkAllocateMemory(device, &allocateInfo, nullptr, &staging.memory)};
+    if (const VkResult result{vkAllocateMemory(m_device, &allocateInfo, nullptr,
+                                               &staging.memory)};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
 
     if (const VkResult result{
-            vkBindBufferMemory(device, staging.buffer, staging.memory, 0)};
+            vkBindBufferMemory(m_device, staging.buffer, staging.memory, 0)};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
 
     void *data{nullptr};
     if (const VkResult result{
-            vkMapMemory(device, staging.memory, 0, pixelByteCount, 0, &data)};
+            vkMapMemory(m_device, staging.memory, 0, pixelByteCount, 0, &data)};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
 
-    std::memcpy(data, props.image.pixels.data(), props.image.pixels.size());
-    vkUnmapMemory(device, staging.memory);
+    std::memcpy(data, image.pixels.data(), image.pixels.size());
+    vkUnmapMemory(m_device, staging.memory);
   }
 
   {
     VkMemoryRequirements memoryRequirements{};
-    vkGetImageMemoryRequirements(device, m_ImageHandle, &memoryRequirements);
+    vkGetImageMemoryRequirements(m_device, m_ImageHandle, &memoryRequirements);
 
     const VkMemoryAllocateInfo allocateInfo{
         .sType{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO},
         .pNext{nullptr},
         .allocationSize{memoryRequirements.size},
-        .memoryTypeIndex{VulkanApp::GetInstance()->RetrieveMemoryTypeIndex(
-            memoryRequirements.memoryTypeBits,
+        .memoryTypeIndex{retrieve_memory_type_index(
+            physical_device, memoryRequirements.memoryTypeBits,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)}};
 
     if (const VkResult result{
-            vkAllocateMemory(device, &allocateInfo, nullptr, &m_ImageMemory)};
+            vkAllocateMemory(m_device, &allocateInfo, nullptr, &m_ImageMemory)};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
 
     if (const VkResult result{
-            vkBindImageMemory(device, m_ImageHandle, m_ImageMemory, 0)};
+            vkBindImageMemory(m_device, m_ImageHandle, m_ImageMemory, 0)};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
@@ -225,7 +230,7 @@ texture_2d::initialize(const texture_2d_props &props) {
                         .baseArrayLayer{},
                         .layerCount{1}}};
 
-  if (const VkResult result{vkCreateImageView(device, &imageViewCreateInfo,
+  if (const VkResult result{vkCreateImageView(m_device, &imageViewCreateInfo,
                                               nullptr, &m_ImageView)};
       result != VK_SUCCESS) {
     return make_vulkan_error(result);
@@ -235,12 +240,12 @@ texture_2d::initialize(const texture_2d_props &props) {
       .sType{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO},
       .pNext{nullptr},
       .flags{},
-      .magFilter{props.sampler.filter},
-      .minFilter{props.sampler.filter},
+      .magFilter{sampler.filter},
+      .minFilter{sampler.filter},
       .mipmapMode{VK_SAMPLER_MIPMAP_MODE_LINEAR},
-      .addressModeU{props.sampler.address_mode},
-      .addressModeV{props.sampler.address_mode},
-      .addressModeW{props.sampler.address_mode},
+      .addressModeU{sampler.address_mode},
+      .addressModeV{sampler.address_mode},
+      .addressModeW{sampler.address_mode},
       .mipLodBias{0.0f},
       .anisotropyEnable{VK_FALSE},
       .maxAnisotropy{1.0f},
@@ -252,7 +257,7 @@ texture_2d::initialize(const texture_2d_props &props) {
       .unnormalizedCoordinates{VK_FALSE}};
 
   if (const VkResult result{
-          vkCreateSampler(device, &samplerCreateInfo, nullptr, &m_Sampler)};
+          vkCreateSampler(m_device, &samplerCreateInfo, nullptr, &m_Sampler)};
       result != VK_SUCCESS) {
     return make_vulkan_error(result);
   }
@@ -262,8 +267,10 @@ texture_2d::initialize(const texture_2d_props &props) {
 
 texture_2d::texture_2d(texture_2d &&other) noexcept
     : m_width{other.m_width}, m_height{other.m_height},
-      m_ImageHandle{other.m_ImageHandle}, m_ImageMemory{other.m_ImageMemory},
-      m_ImageView{other.m_ImageView}, m_Sampler{other.m_Sampler} {
+      m_device{other.m_device}, m_ImageHandle{other.m_ImageHandle},
+      m_ImageMemory{other.m_ImageMemory}, m_ImageView{other.m_ImageView},
+      m_Sampler{other.m_Sampler} {
+  other.m_device = VK_NULL_HANDLE;
   other.m_width = {};
   other.m_height = {};
   other.m_ImageHandle = VK_NULL_HANDLE;
@@ -279,6 +286,7 @@ texture_2d &texture_2d::operator=(texture_2d &&other) noexcept {
 
   destroy();
 
+  m_device = other.m_device;
   m_width = other.m_width;
   m_height = other.m_height;
   m_ImageHandle = other.m_ImageHandle;
@@ -286,6 +294,7 @@ texture_2d &texture_2d::operator=(texture_2d &&other) noexcept {
   m_ImageView = other.m_ImageView;
   m_Sampler = other.m_Sampler;
 
+  other.m_device = VK_NULL_HANDLE;
   other.m_width = {};
   other.m_height = {};
   other.m_ImageHandle = VK_NULL_HANDLE;
@@ -299,13 +308,16 @@ texture_2d &texture_2d::operator=(texture_2d &&other) noexcept {
 texture_2d::~texture_2d() { destroy(); }
 
 void texture_2d::destroy() noexcept {
-  const VkDevice device{VulkanApp::GetInstance()->m_LogicalDevice};
+  if (m_device == VK_NULL_HANDLE) {
+    return;
+  }
 
-  vkDestroySampler(device, m_Sampler, nullptr);
-  vkDestroyImageView(device, m_ImageView, nullptr);
-  vkFreeMemory(device, m_ImageMemory, nullptr);
-  vkDestroyImage(device, m_ImageHandle, nullptr);
+  vkDestroySampler(m_device, m_Sampler, nullptr);
+  vkDestroyImageView(m_device, m_ImageView, nullptr);
+  vkFreeMemory(m_device, m_ImageMemory, nullptr);
+  vkDestroyImage(m_device, m_ImageHandle, nullptr);
 
+  m_device = VK_NULL_HANDLE;
   m_width = {};
   m_height = {};
   m_Sampler = VK_NULL_HANDLE;
