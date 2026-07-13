@@ -32,15 +32,26 @@ cmake --preset msvc
 cmake --build --preset msvc-debug
 ```
 
-Available configure presets: `msvc`, `clang` (clang-cl), `msvc-asan` (AddressSanitizer) and
-`ninja` (compile database for clang-tidy). Shaders are
+Prerequisites (macOS):
+- Xcode command line tools and Ninja
+- CMake 3.30+
+- Vulkan SDK 1.3+ with MoltenVK
+
+```
+cmake --preset macos
+cmake --build --preset macos-debug
+```
+
+Available configure presets: `msvc`, `clang` (clang-cl), `msvc-asan` (AddressSanitizer),
+`macos` (Ninja, AppleClang) and `ninja` (compile database for clang-tidy). Shaders are
 compiled to SPIR-V automatically as part of the build. Dependencies are
 fetched by CMake.
 
 ## Running
 
 ```
-build/msvc/Debug/vulkan_mandelbrot_renderer.exe
+build/msvc/Debug/vulkan_mandelbrot_renderer.exe   # Windows
+build/macos/Debug/vulkan_mandelbrot_renderer      # macOS
 ```
 
 Run from the repository root so the relative `assets/` paths resolve. Pass `--compute` to render
@@ -60,18 +71,22 @@ offline to `mandelbrot.png` instead of opening the interactive window.
 
 ## Development setup
 
-Git for Windows is required.
-
 ```sh
 git config core.hooksPath hooks
 ```
 
-clang-tidy needs a compile database. Generate it with the ninja preset from an
-**x64 Native Tools Command Prompt**:
+clang-tidy requires a compile database. On Windows, generate it with the ninja preset:
 
 ```
 cmake --preset ninja
 ```
+
+> [!IMPORTANT]
+> On Windows the ninja preset must be configured from an **x64 Native Tools Command Prompt**
+> (requires Git for Windows), otherwise the compile database will point at the wrong toolchain.
+
+On macOS the `macos` preset already exports one, clang-tidy and clang-format come with
+`brew install llvm`.
 
 ## Offline compute rendering
 
