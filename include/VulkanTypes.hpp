@@ -162,6 +162,235 @@ make_vulkan_error(const VkResult result) noexcept {
   return 0;
 }
 
+struct single_time_command_context final {
+  VkDevice device{VK_NULL_HANDLE};
+  VkCommandPool command_pool{VK_NULL_HANDLE};
+  VkQueue queue{VK_NULL_HANDLE};
+};
+
+[[nodiscard]] inline std::expected<VkCommandBuffer, std::error_code>
+begin_single_time_commands(
+    const single_time_command_context &context) noexcept {
+  const VkCommandBufferAllocateInfo allocate_info{
+      .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO},
+      .pNext{nullptr},
+      .commandPool{context.command_pool},
+      .level{VK_COMMAND_BUFFER_LEVEL_PRIMARY},
+      .commandBufferCount{1u}};
+
+  VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+  if (const VkResult result{vkAllocateCommandBuffers(
+          context.device, &allocate_info, &command_buffer)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  const VkCommandBufferBeginInfo begin_info{
+      .sType{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO},
+      .pNext{nullptr},
+      .flags{VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT},
+      .pInheritanceInfo{nullptr}};
+
+  if (const VkResult result{vkBeginCommandBuffer(command_buffer, &begin_info)};
+      result != VK_SUCCESS) {
+    vkFreeCommandBuffers(context.device, context.command_pool, 1,
+                         &command_buffer);
+    return make_vulkan_error(result);
+  }
+
+  return command_buffer;
+}
+
+[[nodiscard]] inline std::expected<void, std::error_code>
+end_single_time_commands(const single_time_command_context &context,
+                         const VkCommandBuffer command_buffer) noexcept {
+  struct submit_resources final {
+    const single_time_command_context &context;
+    VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+    VkFence fence{VK_NULL_HANDLE};
+
+    submit_resources(const submit_resources &) = delete;
+    submit_resources &operator=(const submit_resources &) = delete;
+    submit_resources(submit_resources &&) = delete;
+    submit_resources &operator=(submit_resources &&) = delete;
+
+    submit_resources(const single_time_command_context &in_context,
+                     const VkCommandBuffer in_command_buffer) noexcept
+        : context{in_context}, command_buffer{in_command_buffer} {}
+
+    ~submit_resources() {
+      vkDestroyFence(context.device, fence, nullptr);
+      vkFreeCommandBuffers(context.device, context.command_pool, 1,
+                           &command_buffer);
+    }
+  };
+
+  submit_resources submit{context, command_buffer};
+
+  if (const VkResult result{vkEndCommandBuffer(command_buffer)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  const VkFenceCreateInfo fence_create_info{
+      .sType{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO}, .pNext{nullptr}, .flags{}};
+
+  if (const VkResult result{vkCreateFence(context.device, &fence_create_info,
+                                          nullptr, &submit.fence)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  const VkSubmitInfo submit_info{.sType{VK_STRUCTURE_TYPE_SUBMIT_INFO},
+                                 .pNext{nullptr},
+                                 .waitSemaphoreCount{},
+                                 .pWaitSemaphores{nullptr},
+                                 .pWaitDstStageMask{nullptr},
+                                 .commandBufferCount{1u},
+                                 .pCommandBuffers{&command_buffer},
+                                 .signalSemaphoreCount{},
+                                 .pSignalSemaphores{nullptr}};
+
+  if (const VkResult result{
+          vkQueueSubmit(context.queue, 1, &submit_info, submit.fence)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  if (const VkResult result{vkWaitForFences(context.device, 1, &submit.fence,
+                                            VK_FALSE, UINT64_MAX)};
+      result != VK_SUCCESS) {
+    return make_vulkan_error(result);
+  }
+
+  return {};
+}
+
+struct insert_image_memory_barrier_props final {
+  VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+  VkImage image{VK_NULL_HANDLE};
+  VkAccessFlags src_access_mask{};
+  VkAccessFlags dst_access_mask{};
+  VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkImageLayout new_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkPipelineStageFlags src_stage_mask{};
+  VkPipelineStageFlags dst_stage_mask{};
+  VkImageSubresourceRange subresource_range{};
+};
+
+inline void insert_image_memory_barrier(
+    insert_image_memory_barrier_props &&props) noexcept {
+  const VkImageMemoryBarrier image_memory_barrier{
+      .sType{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER},
+      .pNext{nullptr},
+      .srcAccessMask{props.src_access_mask},
+      .dstAccessMask{props.dst_access_mask},
+      .oldLayout{props.old_layout},
+      .newLayout{props.new_layout},
+      .srcQueueFamilyIndex{VK_QUEUE_FAMILY_IGNORED},
+      .dstQueueFamilyIndex{VK_QUEUE_FAMILY_IGNORED},
+      .image{props.image},
+      .subresourceRange{props.subresource_range}};
+
+  vkCmdPipelineBarrier(props.command_buffer, props.src_stage_mask,
+                       props.dst_stage_mask, 0, 0, nullptr, 0, nullptr, 1,
+                       &image_memory_barrier);
+}
+
+[[nodiscard]] inline VkAccessFlags
+source_access_mask_for_layout(const VkImageLayout layout) noexcept {
+  switch (layout) {
+  case VK_IMAGE_LAYOUT_UNDEFINED: {
+    return 0;
+  }
+  case VK_IMAGE_LAYOUT_PREINITIALIZED: {
+    return VK_ACCESS_HOST_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_READ_BIT;
+  }
+  case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: {
+    return VK_ACCESS_SHADER_READ_BIT;
+  }
+  default: {
+    assert(false);
+    return 0;
+  }
+  }
+}
+
+[[nodiscard]] inline VkAccessFlags
+destination_access_mask_for_layout(const VkImageLayout layout) noexcept {
+  switch (layout) {
+  case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL: {
+    return VK_ACCESS_TRANSFER_READ_BIT;
+  }
+  case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: {
+    return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  }
+  case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: {
+    return VK_ACCESS_SHADER_READ_BIT;
+  }
+  default: {
+    assert(false);
+    return 0;
+  }
+  }
+}
+
+struct set_image_layout_props final {
+  VkCommandBuffer command_buffer{VK_NULL_HANDLE};
+  VkImage image{VK_NULL_HANDLE};
+  VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkImageLayout new_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+  VkPipelineStageFlags src_stage_mask{};
+  VkPipelineStageFlags dst_stage_mask{};
+};
+
+inline void set_image_layout(set_image_layout_props &&props) noexcept {
+  constexpr VkImageSubresourceRange subresource_range{
+      .aspectMask{VK_IMAGE_ASPECT_COLOR_BIT},
+      .baseMipLevel{},
+      .levelCount{1u},
+      .baseArrayLayer{},
+      .layerCount{1u}};
+
+  VkAccessFlags src_access_mask{
+      source_access_mask_for_layout(props.old_layout)};
+  const VkAccessFlags dst_access_mask{
+      destination_access_mask_for_layout(props.new_layout)};
+
+  if (props.new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL &&
+      src_access_mask == 0) {
+    src_access_mask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+  }
+
+  insert_image_memory_barrier({.command_buffer{props.command_buffer},
+                               .image{props.image},
+                               .src_access_mask{src_access_mask},
+                               .dst_access_mask{dst_access_mask},
+                               .old_layout{props.old_layout},
+                               .new_layout{props.new_layout},
+                               .src_stage_mask{props.src_stage_mask},
+                               .dst_stage_mask{props.dst_stage_mask},
+                               .subresource_range{subresource_range}});
+}
+
 #ifdef APP_DEBUG
 #define VK_CHECK(x)                                                            \
   do {                                                                         \
@@ -176,9 +405,3 @@ make_vulkan_error(const VkResult result) noexcept {
 #else
 #define VK_CHECK(x) x
 #endif
-
-struct VulkanBuffer {
-  VkBuffer Handle = VK_NULL_HANDLE;
-  VkDeviceMemory DeviceMemory = VK_NULL_HANDLE;
-  std::vector<std::byte> CPUData;
-};

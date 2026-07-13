@@ -32,12 +32,15 @@ FetchContent_MakeAvailable(
 )
 
 add_executable(vulkan_mandelbrot_renderer
-	src/Application.cpp
+	src/realtime_mandelbrot_application.cpp
+	src/compute_mandelbrot_application.cpp
 	src/image_2d.cpp
 	src/input.cpp
 	src/texture_2d.cpp
+	src/vulkan_buffer.cpp
+	src/vulkan_context.cpp
 	src/LibraryBuild.cpp
-	src/Main.cpp
+	src/main.cpp
 	src/platform/win32/window_win32.cpp
 )
 
@@ -51,6 +54,7 @@ target_link_libraries(vulkan_mandelbrot_renderer PRIVATE
 	Vulkan::Vulkan
 	glm::glm
 	stb
+	Shell32
 )
 
 target_compile_definitions(vulkan_mandelbrot_renderer PRIVATE
