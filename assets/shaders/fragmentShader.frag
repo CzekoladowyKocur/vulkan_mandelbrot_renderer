@@ -21,16 +21,19 @@ void main()
     int i;
     for(i = 0; i < v_IterationCount; ++i)
 	{
-		float x = (z.x * z.x - z.y * z.y) + c.x;
-		float y = (z.y * z.x + z.x * z.y) + c.y;
-	
-		if((x * x + y * y) > 4.0)
+		z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+
+		if(dot(z, z) > 256.0)
 			break;
-		
-		z.x = x;
-		z.y = y;
     }
 
-	const float value = i == v_IterationCount ? 0.0 : float(	i) / v_IterationCount;
-	Color = texture(u_ColorPalette, vec2(value, value)); 
+	if(i == v_IterationCount)
+	{
+		Color = vec4(0.0, 0.0, 0.0, 1.0);
+		return;
+	}
+
+	const float smoothIteration = float(i) + 1.0 - log2(0.5 * log(dot(z, z)));
+	const float value = smoothIteration / float(v_IterationCount);
+	Color = texture(u_ColorPalette, vec2(value, value));
 }
