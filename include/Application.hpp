@@ -1,6 +1,6 @@
 #pragma once
-#include "include/Image2D.hpp"
 #include "include/VulkanTypes.hpp"
+#include "include/texture_2d.hpp"
 #include "include/window.hpp"
 #include <cstdint>
 #include <optional>
@@ -51,8 +51,6 @@ private:
   void CleanupSwapchain();
   /* Pipeline */
   VkShaderModule CreateShaderModule(const std::string_view filepath) const;
-  uint32_t RetrieveMemoryTypeIndex(VkMemoryPropertyFlags memoryPropertyFlags,
-                                   uint32_t memoryTypeBits) const;
 
   VkCommandBuffer BeginRecordingSingleTimeUseCommands(const bool compute);
   void EndRecordingSingleTimeUseCommands(VkCommandBuffer commandBuffer,
@@ -186,7 +184,7 @@ private:
   std::vector<VkFence> m_ImagesInFlight;
 
   /* Assets */
-  Image2D *m_ColorPaletteImage;
+  std::optional<texture_2d> m_ColorPaletteTexture;
 
   /* Debug */
 #ifdef APP_DEBUG
@@ -196,5 +194,5 @@ private:
   static VulkanApp *s_ApplicationInstance;
 
 private:
-  friend class Image2D;
+  friend class texture_2d;
 };
