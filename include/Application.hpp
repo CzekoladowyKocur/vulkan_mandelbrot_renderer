@@ -26,10 +26,6 @@ public:
 
   void OnEvent(const event &polled_event);
 
-public:
-  static bool Close();
-  static VulkanApp *GetInstance();
-
 private:
   /* Vulkan Context Initialization */
   bool CreateInstance();
@@ -171,6 +167,4 @@ private:
 #ifdef APP_DEBUG
   VkDebugReportCallbackEXT m_DebugReportCallback;
 #endif
-private:
-  static VulkanApp *s_ApplicationInstance;
 };
