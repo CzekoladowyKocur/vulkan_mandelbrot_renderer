@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <print>
 #include <string_view>
 #include <vulkan/vulkan.h>
@@ -43,20 +42,10 @@
     return EXIT_SUCCESS;
   }
 
-  const auto application{std::make_unique<realtime_mandelbrot_application>()};
+  realtime_mandelbrot_application application{};
 
-  if (!application->initialize()) {
-    std::println("Failed to initialize application");
-    return EXIT_FAILURE;
-  }
-
-  if (!application->run()) {
-    std::println("Failed to run application properly");
-    return EXIT_FAILURE;
-  }
-
-  if (!application->shutdown()) {
-    std::println("Failed to shutdown application properly");
+  if (const auto result{application.run()}; !result) {
+    std::println("Failed to run application: {}", result.error().message());
     return EXIT_FAILURE;
   }
 
