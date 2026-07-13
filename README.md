@@ -6,8 +6,8 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
 ![Vulkan](https://img.shields.io/badge/Vulkan-1.3%2B-red)
 
-A real-time Mandelbrot set renderer written in C++23 with the Vulkan API and Win32 with
-interactive navigation and offline rendering to PNG using compute shaders.
+A cross-platform (Windows/macOS) real-time Mandelbrot set renderer written in C++23 and Vulkan,
+with interactive navigation and offline rendering to PNG using compute shaders.
 
 https://github.com/user-attachments/assets/6ff97a7c-fe98-41ef-9f14-5b64f2bbf689
 
