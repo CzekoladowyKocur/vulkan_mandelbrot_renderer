@@ -591,8 +591,7 @@ realtime_mandelbrot_application::create_swapchain_resources(
 
   resources.present_complete.resize(resources.max_frames_in_flight,
                                     VK_NULL_HANDLE);
-  resources.render_complete.resize(resources.max_frames_in_flight,
-                                   VK_NULL_HANDLE);
+  resources.render_complete.resize(resources.image_count, VK_NULL_HANDLE);
   resources.in_flight_fences.resize(resources.max_frames_in_flight,
                                     VK_NULL_HANDLE);
   for (std::uint32_t i{0u}; i < resources.max_frames_in_flight; ++i) {
@@ -603,16 +602,18 @@ realtime_mandelbrot_application::create_swapchain_resources(
       return make_vulkan_error(result);
     }
 
-    if (const VkResult result{vkCreateSemaphore(context.device(),
-                                                &semaphore_create_info, nullptr,
-                                                &resources.render_complete[i])};
-        result != VK_SUCCESS) {
-      return make_vulkan_error(result);
-    }
-
     if (const VkResult result{vkCreateFence(context.device(),
                                             &fence_create_info, nullptr,
                                             &resources.in_flight_fences[i])};
+        result != VK_SUCCESS) {
+      return make_vulkan_error(result);
+    }
+  }
+
+  for (std::uint32_t i{0u}; i < resources.image_count; ++i) {
+    if (const VkResult result{vkCreateSemaphore(context.device(),
+                                                &semaphore_create_info, nullptr,
+                                                &resources.render_complete[i])};
         result != VK_SUCCESS) {
       return make_vulkan_error(result);
     }
@@ -1164,7 +1165,7 @@ realtime_mandelbrot_application::draw_frame(
       .commandBufferCount{1u},
       .pCommandBuffers{&command_buffers.buffers[image_index]},
       .signalSemaphoreCount{1u},
-      .pSignalSemaphores{&swapchain.render_complete[frame_index]}};
+      .pSignalSemaphores{&swapchain.render_complete[image_index]}};
 
   if (const VkResult result{vkResetFences(
           context.device(), 1, &swapchain.in_flight_fences[frame_index])};
@@ -1183,7 +1184,7 @@ realtime_mandelbrot_application::draw_frame(
       .sType{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR},
       .pNext{nullptr},
       .waitSemaphoreCount{1u},
-      .pWaitSemaphores{&swapchain.render_complete[frame_index]},
+      .pWaitSemaphores{&swapchain.render_complete[image_index]},
       .swapchainCount{1u},
       .pSwapchains{&swapchain.swapchain},
       .pImageIndices{&image_index},

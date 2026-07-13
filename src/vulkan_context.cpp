@@ -1,4 +1,5 @@
 #include "include/vulkan_context.hpp"
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <fstream>
@@ -53,7 +54,12 @@ vulkan_context::initialize(const vulkan_context_props &props) {
     return result;
   }
 
-  if (const auto result{create_device()}; !result) {
+  const bool presentation_required{std::ranges::any_of(
+      props.instance_extensions, [](const char *const extension) {
+        return std::strcmp(extension, VK_KHR_SURFACE_EXTENSION_NAME) == 0;
+      })};
+
+  if (const auto result{create_device(presentation_required)}; !result) {
     return result;
   }
 
@@ -261,9 +267,12 @@ std::expected<void, std::error_code> vulkan_context::select_physical_device() {
   return {};
 }
 
-std::expected<void, std::error_code> vulkan_context::create_device() {
-  std::vector<const char *> required_device_extensions{
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+std::expected<void, std::error_code>
+vulkan_context::create_device(const bool presentation_required) {
+  std::vector<const char *> required_device_extensions{};
+  if (presentation_required) {
+    required_device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  }
 
   std::uint32_t available_extension_count{};
   vkEnumerateDeviceExtensionProperties(m_physical_device, nullptr,

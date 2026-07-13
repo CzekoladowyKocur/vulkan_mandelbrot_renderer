@@ -1,4 +1,6 @@
+#if defined(_MSC_VER)
 #pragma warning(push, 0)
+#endif
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
@@ -9,7 +11,9 @@
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 #include "include/compute_mandelbrot_application.hpp"
 #include "include/vulkan_buffer.hpp"

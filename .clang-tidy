@@ -8,4 +8,4 @@ Checks: >
   -modernize-use-trailing-return-type,
   -bugprone-easily-swappable-parameters
 WarningsAsErrors: '*'
-HeaderFilterRegex: '(src|include)/'
+HeaderFilterRegex: 'vulkan_mandelbrot_renderer/(src|include)/'
