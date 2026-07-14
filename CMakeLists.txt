@@ -94,7 +94,7 @@ if(MSVC)
 	)
 
 	set_target_properties(vulkan_mandelbrot_renderer PROPERTIES
-		VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+		VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
 	)
 endif()
 
@@ -180,16 +180,19 @@ elseif(MSVC)
 endif()
 
 set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders)
+set(SHADER_OUTPUT_DIR ${CMAKE_BINARY_DIR}/assets/shaders)
 set(SHADER_SOURCES
       ${SHADER_DIR}/vertex_shader.vert
       ${SHADER_DIR}/fragment_shader.frag
       ${SHADER_DIR}/compute_shader.comp
 )
 
+file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
+
 set(SPIRV_FILES "")
 foreach(SHADER ${SHADER_SOURCES})
       get_filename_component(SHADER_NAME ${SHADER} NAME_WE)
-      set(SPIRV ${SHADER_DIR}/${SHADER_NAME}.spv)
+      set(SPIRV ${SHADER_OUTPUT_DIR}/${SHADER_NAME}.spv)
       add_custom_command(
               OUTPUT ${SPIRV}
               COMMAND Vulkan::glslc ${SHADER} -o ${SPIRV}
