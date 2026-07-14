@@ -394,11 +394,11 @@ std::expected<void, std::error_code> window::initialize() noexcept {
         NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
         NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable};
 
-    NSWindow *const ns_window{
-        [[NSWindow alloc] initWithContentRect:content_rect
-                                    styleMask:style_mask
-                                      backing:NSBackingStoreBuffered
-                                        defer:NO]};
+    NSWindow *const ns_window{[[NSWindow alloc]
+        initWithContentRect:content_rect
+                  styleMask:style_mask
+                    backing:NSBackingStoreBuffered
+                      defer:NO]};
 
     if (ns_window == nil) {
       return std::unexpected{
@@ -420,8 +420,7 @@ std::expected<void, std::error_code> window::initialize() noexcept {
 
     [ns_window setContentView:view];
     [ns_window setDelegate:m_detail->delegate];
-    [ns_window
-        setTitle:[NSString stringWithUTF8String:m_detail->name.c_str()]];
+    [ns_window setTitle:[NSString stringWithUTF8String:m_detail->name.c_str()]];
     [ns_window center];
     [ns_window makeFirstResponder:view];
     [ns_window makeKeyAndOrderFront:nil];
@@ -430,8 +429,7 @@ std::expected<void, std::error_code> window::initialize() noexcept {
       [ns_window zoom:nil];
     }
 
-    [metal_layer
-        setContentsScale:[ns_window backingScaleFactor]];
+    [metal_layer setContentsScale:[ns_window backingScaleFactor]];
 
     m_detail->update_size();
 
@@ -464,11 +462,10 @@ void window::poll(const function_ref<void(const event &)> callback) noexcept {
     m_detail->callback = &callback;
 
     while (true) {
-      NSEvent *const ns_event{
-          [NSApp nextEventMatchingMask:NSEventMaskAny
-                             untilDate:nil
-                                inMode:NSDefaultRunLoopMode
-                               dequeue:YES]};
+      NSEvent *const ns_event{[NSApp nextEventMatchingMask:NSEventMaskAny
+                                                 untilDate:nil
+                                                    inMode:NSDefaultRunLoopMode
+                                                   dequeue:YES]};
 
       if (ns_event == nil) {
         break;
