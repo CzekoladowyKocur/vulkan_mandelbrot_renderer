@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FILES=$(git diff --cached --name-only --diff-filter=ACMR -- 'src/*.cpp' 'src/*.h' 'include/*.cpp' 'include/*.h')
+FILES=$(git diff --cached --name-only --diff-filter=ACMR -- 'src/*.cpp' 'src/*.mm' 'include/*.hpp')
 
 [ -z "$FILES" ] && exit 0
 
@@ -27,6 +27,16 @@ if [ -z "$COMPILE_DB_DIR" ]; then
 	exit 0
 fi
 
+if ! command -v clang-tidy >/dev/null 2>&1; then
+	echo "pre-commit: clang-tidy not found in PATH, skipping" >&2
+	exit 0
+fi
+
+TIDY_ARGS=""
+if [ "$(uname)" = "Darwin" ]; then
+	TIDY_ARGS="--extra-arg=-isysroot$(xcrun --show-sdk-path)"
+fi
+
 TIDY_FILES=""
 for FILE in $(echo "$FILES" | grep '\.cpp$'); do
 	if grep -q "$FILE" "$COMPILE_DB_DIR/compile_commands.json"; then
@@ -35,7 +45,7 @@ for FILE in $(echo "$FILES" | grep '\.cpp$'); do
 done
 
 if [ -n "$TIDY_FILES" ]; then
-	clang-tidy --quiet -p=$COMPILE_DB_DIR $TIDY_FILES
+	clang-tidy --quiet $TIDY_ARGS -p=$COMPILE_DB_DIR $TIDY_FILES
 	TIDY_STATUS=$?
 else
 	TIDY_STATUS=0
