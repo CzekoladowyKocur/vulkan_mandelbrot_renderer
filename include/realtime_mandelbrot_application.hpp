@@ -1,9 +1,9 @@
 #pragma once
-#include "include/vulkan_types.hpp"
-#include "include/input.hpp"
-#include "include/vulkan_buffer.hpp"
-#include "include/vulkan_context.hpp"
-#include "include/window.hpp"
+#include "input.hpp"
+#include "vulkan_buffer.hpp"
+#include "vulkan_context.hpp"
+#include "vulkan_types.hpp"
+#include "window.hpp"
 #include <cstdint>
 #include <expected>
 #include <system_error>

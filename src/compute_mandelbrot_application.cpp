@@ -15,9 +15,9 @@
 #pragma warning(pop)
 #endif
 
-#include "include/compute_mandelbrot_application.hpp"
-#include "include/vulkan_buffer.hpp"
-#include "include/vulkan_context.hpp"
+#include "compute_mandelbrot_application.hpp"
+#include "vulkan_buffer.hpp"
+#include "vulkan_context.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdint>

@@ -1,6 +1,6 @@
 #pragma once
-#include "include/events.hpp"
-#include "include/function_ref.hpp"
+#include "events.hpp"
+#include "function_ref.hpp"
 #include <expected>
 #include <memory>
 #include <span>

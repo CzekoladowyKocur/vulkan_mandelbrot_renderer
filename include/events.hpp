@@ -1,5 +1,5 @@
 #pragma once
-#include "include/input.hpp"
+#include "input.hpp"
 #include <cstdint>
 #include <variant>
 

@@ -2,9 +2,9 @@
 #include <print>
 #include <string_view>
 
-#include "include/app_main.hpp"
-#include "include/compute_mandelbrot_application.hpp"
-#include "include/realtime_mandelbrot_application.hpp"
+#include "app_main.hpp"
+#include "compute_mandelbrot_application.hpp"
+#include "realtime_mandelbrot_application.hpp"
 
 int vulkan_app_main(const app_mode mode) {
   switch (mode) {

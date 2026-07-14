@@ -4,8 +4,8 @@
 #include <Windows.h>
 #include <shellapi.h>
 
-#include "include/app_main.hpp"
-#include "include/window.hpp"
+#include "app_main.hpp"
+#include "window.hpp"
 
 namespace {
 [[nodiscard]] app_mode parse_flags() noexcept {

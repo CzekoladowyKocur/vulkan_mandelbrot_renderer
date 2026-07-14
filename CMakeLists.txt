@@ -56,7 +56,7 @@ elseif(APPLE)
 	)
 endif()
 
-target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(vulkan_mandelbrot_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})

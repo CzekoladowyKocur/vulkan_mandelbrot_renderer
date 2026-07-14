@@ -1,4 +1,4 @@
-#include "include/realtime_mandelbrot_application.hpp"
+#include "realtime_mandelbrot_application.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>

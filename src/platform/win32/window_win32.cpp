@@ -1,10 +1,10 @@
-#include "include/window.hpp"
+#include "window.hpp"
 
 #include <Windows.h>
 #include <array>
 #include <utility>
 
-#include "include/vulkan_types.hpp"
+#include "vulkan_types.hpp"
 #include <vulkan/vulkan_win32.h>
 
 namespace {
