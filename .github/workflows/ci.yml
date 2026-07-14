@@ -70,4 +70,4 @@ jobs:
     - run: pipx install clang-tidy==22.1.7
     - run: cmake --preset ninja
     - shell: bash
-      run: clang-tidy --quiet -p build/ninja src/*.cpp
+      run: clang-tidy --quiet -p build/ninja $(find src -name '*.cpp')
