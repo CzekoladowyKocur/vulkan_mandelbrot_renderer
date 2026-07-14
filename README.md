@@ -1,7 +1,7 @@
 # Vulkan Mandelbrot Renderer
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![CI](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/actions/workflows/ci.yml)
+[![CI](https://github.com/CzekoladowyKocur/vulkan_mandelbrot_renderer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CzekoladowyKocur/vulkan_mandelbrot_renderer/actions/workflows/ci.yml)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS-blue)
 ![Compilers](https://img.shields.io/badge/compilers-MSVC%20%7C%20clang--cl%20%7C%20AppleClang-blue)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
