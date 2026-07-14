@@ -1,5 +1,6 @@
 # Vulkan Mandelbrot Renderer
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![CI](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CzekoladowyKocur/Vulkan-Mandelbrot-Set/actions/workflows/ci.yml)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS-blue)
 ![Compilers](https://img.shields.io/badge/compilers-MSVC%20%7C%20clang--cl%20%7C%20AppleClang-blue)
@@ -55,11 +56,11 @@ fetched by CMake.
 ## Running
 
 ```
-build/msvc/Debug/vulkan_mandelbrot_renderer.exe   # Windows
-build/macos/Debug/vulkan_mandelbrot_renderer      # macOS
+cd build/msvc  && Debug/vulkan_mandelbrot_renderer.exe   # Windows
+cd build/macos && Debug/vulkan_mandelbrot_renderer       # macOS
 ```
 
-Run from the repository root so the relative `assets/` paths resolve. Pass `--compute` to render
+Run from the build directory so the relative `assets/` paths resolve. Pass `--compute` to render
 offline to `mandelbrot.png` instead of opening the interactive window.
 
 ### Controls
