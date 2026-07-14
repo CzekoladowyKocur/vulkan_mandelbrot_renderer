@@ -153,7 +153,8 @@ create_compute_pipeline(compute_pipeline_resources &resources,
                          nullptr);
 
   const auto shader_module{create_shader_module(
-      resources.device, "assets/shaders/computeShader.spv")};
+      resources.device, "assets/shaders/compute_shader.spv")};
+
   if (!shader_module) {
     std::println("Failed to create compute shader");
     return std::unexpected(shader_module.error());

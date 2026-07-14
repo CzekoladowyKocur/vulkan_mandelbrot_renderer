@@ -7,24 +7,28 @@
 #include "include/app_main.hpp"
 #include "include/window.hpp"
 
-[[nodiscard]] static bool parse_compute_flag() noexcept {
+namespace {
+[[nodiscard]] app_mode parse_flags() noexcept {
   int argument_count{0};
+  app_mode mode{app_mode::_default};
+
   wchar_t **const arguments{
       ::CommandLineToArgvW(::GetCommandLineW(), &argument_count)};
+
   if (arguments == nullptr) {
-    return false;
+    return mode;
   }
 
-  bool compute{false};
   for (int i{1}; i < argument_count; ++i) {
     if (std::wstring_view{arguments[i]} == L"--compute") {
-      compute = true;
+      mode = app_mode::compute;
     }
   }
 
   ::LocalFree(static_cast<HLOCAL>(static_cast<void *>(arguments)));
-  return compute;
+  return mode;
 }
+} // namespace
 
 #undef APIENTRY
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
@@ -58,7 +62,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 
   ::ShowWindow(::GetConsoleWindow(), nShowCmd != 0 ? SW_SHOW : SW_HIDE);
 
-  const int result{vulkan_app_main(parse_compute_flag())};
+  const int result{vulkan_app_main(parse_flags())};
 
   ::UnregisterClassA(g_window_class_name, hInstance);
   return result;

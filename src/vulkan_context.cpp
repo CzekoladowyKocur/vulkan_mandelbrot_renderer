@@ -8,8 +8,9 @@
 #include <utility>
 #include <vector>
 
+namespace {
 #ifdef APP_DEBUG
-static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_report_callback(
+VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_report_callback(
     const VkDebugReportFlagsEXT flags,
     const VkDebugReportObjectTypeEXT object_type, const std::uint64_t object,
     const std::size_t location, const std::int32_t message_code,
@@ -29,6 +30,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_report_callback(
   return VK_FALSE;
 }
 #endif
+} // namespace
 
 std::expected<vulkan_context, std::error_code>
 vulkan_context::create(vulkan_context_props &&props) noexcept {

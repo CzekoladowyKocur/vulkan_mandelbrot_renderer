@@ -6,7 +6,7 @@
 #include <array>
 #include <utility>
 
-#include "include/VulkanTypes.hpp"
+#include "include/vulkan_types.hpp"
 #include <vulkan/vulkan_metal.h>
 
 struct macos_window_state {

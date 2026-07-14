@@ -1,5 +1,5 @@
 #pragma once
-#include "include/VulkanTypes.hpp"
+#include "include/vulkan_types.hpp"
 #include "include/input.hpp"
 #include "include/vulkan_buffer.hpp"
 #include "include/vulkan_context.hpp"

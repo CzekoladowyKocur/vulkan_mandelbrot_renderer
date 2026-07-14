@@ -37,7 +37,7 @@ add_executable(vulkan_mandelbrot_renderer
 	src/input.cpp
 	src/vulkan_buffer.cpp
 	src/vulkan_context.cpp
-	src/LibraryBuild.cpp
+	src/library_build.cpp
 	src/main.cpp
 )
 
@@ -181,9 +181,9 @@ endif()
 
 set(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders)
 set(SHADER_SOURCES
-      ${SHADER_DIR}/vertexShader.vert
-      ${SHADER_DIR}/fragmentShader.frag
-      ${SHADER_DIR}/computeShader.comp
+      ${SHADER_DIR}/vertex_shader.vert
+      ${SHADER_DIR}/fragment_shader.frag
+      ${SHADER_DIR}/compute_shader.comp
 )
 
 set(SPIRV_FILES "")

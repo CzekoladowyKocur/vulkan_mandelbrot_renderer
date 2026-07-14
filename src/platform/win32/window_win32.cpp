@@ -4,16 +4,17 @@
 #include <array>
 #include <utility>
 
-#include "include/VulkanTypes.hpp"
+#include "include/vulkan_types.hpp"
 #include <vulkan/vulkan_win32.h>
 
+namespace {
 constexpr int g_callback_slot{0};
 
-[[nodiscard]] static std::unexpected<std::error_code> get_last_error() noexcept;
+[[nodiscard]] std::unexpected<std::error_code> get_last_error() noexcept;
 
-static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
-                                      const WPARAM wParam,
-                                      const LPARAM lParam) noexcept;
+LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
+                               const WPARAM wParam,
+                               const LPARAM lParam) noexcept;
 
 struct win32_window_state {
   std::uint32_t width{};
@@ -30,6 +31,7 @@ struct win32_window_state {
     }
   }
 };
+} // namespace
 
 struct window::detail final : win32_window_state {
   explicit detail(window_props &&props)
@@ -104,7 +106,7 @@ std::expected<void, std::error_code> window::initialize() noexcept {
     return get_last_error();
   }
 
-  const LONG_PTR dwNewWndProc{reinterpret_cast<LONG_PTR>(&win32_wndproc)};
+  const LONG_PTR dwNewWndProc{reinterpret_cast<LONG_PTR>(&::win32_wndproc)};
 
   ::SetLastError(0u);
   if (::SetWindowLongPtrA(m_detail->hwnd, GWLP_WNDPROC, dwNewWndProc) == 0 &&
@@ -173,13 +175,13 @@ std::pair<std::uint32_t, std::uint32_t> window::get_size() const noexcept {
   return {m_detail->width, m_detail->height};
 }
 
-[[nodiscard]] static std::unexpected<std::error_code>
-get_last_error() noexcept {
+namespace {
+[[nodiscard]] std::unexpected<std::error_code> get_last_error() noexcept {
   return std::unexpected{std::error_code{static_cast<int>(::GetLastError()),
                                          std::system_category()}};
 }
 
-[[nodiscard]] static key_code
+[[nodiscard]] key_code
 key_code_from_virtual_key(const WPARAM virtual_key) noexcept {
   if (virtual_key >= 'A' && virtual_key <= 'Z') {
     return static_cast<key_code>(std::to_underlying(key_code::a) +
@@ -290,9 +292,9 @@ key_code_from_virtual_key(const WPARAM virtual_key) noexcept {
   }
 }
 
-static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
-                                      const WPARAM wParam,
-                                      const LPARAM lParam) noexcept {
+LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
+                               const WPARAM wParam,
+                               const LPARAM lParam) noexcept {
   constexpr LRESULT event_handled{0};
 
   auto *const state{reinterpret_cast<win32_window_state *>(
@@ -367,3 +369,4 @@ static LRESULT CALLBACK win32_wndproc(const HWND hwnd, const UINT message,
     return ::DefWindowProcA(hwnd, message, wParam, lParam);
   }
 }
+} // namespace
