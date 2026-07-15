@@ -34,7 +34,7 @@ fi
 
 TIDY_ARGS=""
 if [ "$(uname)" = "Darwin" ]; then
-	TIDY_ARGS="--extra-arg=-isysroot$(xcrun --show-sdk-path)"
+	TIDY_ARGS="--extra-arg=-isysroot$(xcrun --show-sdk-path) --extra-arg=-isystem/usr/local/include"
 fi
 
 TIDY_FILES=""
