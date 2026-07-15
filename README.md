@@ -1,21 +1,19 @@
 # Vulkan Mandelbrot Renderer
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![CI](https://github.com/CzekoladowyKocur/vulkan_mandelbrot_renderer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CzekoladowyKocur/vulkan_mandelbrot_renderer/actions/workflows/ci.yml)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS-blue)
 ![Compilers](https://img.shields.io/badge/compilers-MSVC%20%7C%20clang--cl%20%7C%20AppleClang-blue)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
 ![Vulkan](https://img.shields.io/badge/Vulkan-1.3%2B-red)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-> **Note:** Started in 2022 as a Windows-only Vulkan renderer. Revisited in 2026 and modernized
-> end to end: C++17 → C++23, cross-platform (Windows/macOS with a native Cocoa backend),
-> CI for MSVC and clang-cl, enforced clang-tidy/clang-format, and an offline
-> compute-shader rendering path.
-
-A cross-platform (Windows/macOS) real-time Mandelbrot set renderer written in C++23 and Vulkan,
-with interactive navigation and offline rendering to PNG using compute shaders.
+> [!NOTE]
+> Modernization of my 2022 Windows renderer. Now cross-platform with macOS support and rewritten in C++23.
 
 https://github.com/user-attachments/assets/8a15cdd9-bd0f-465a-9f19-635c799aa6e9
+
+*A real-time GPU zoom into the Mandelbrot. ~800 iterations per pixel with smooth coloring.*
 
 ## Features
 
@@ -97,3 +95,12 @@ On macOS the `macos` preset already exports one, clang-tidy and clang-format com
 ## Offline compute rendering
 
 ![OfflineRendering](showcase/ComputeMandelbrot.png)
+
+*Rendered offline with the compute pipeline at 10,000 iterations per pixel.*
+
+## Roadmap
+
+- **Infinite zoom**: the current renderer is limited by floating-point precision.
+    Arbitrarily deep zoom is achievable with perturbation theory.
+- **Linux window backend**: Wayland and/or X11 support on top of the existing
+    platform abstraction.
