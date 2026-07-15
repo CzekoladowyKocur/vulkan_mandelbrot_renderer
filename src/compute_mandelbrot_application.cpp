@@ -15,9 +15,9 @@
 #pragma warning(pop)
 #endif
 
-#include "include/compute_mandelbrot_application.hpp"
-#include "include/vulkan_buffer.hpp"
-#include "include/vulkan_context.hpp"
+#include "compute_mandelbrot_application.hpp"
+#include "vulkan_buffer.hpp"
+#include "vulkan_context.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -153,7 +153,8 @@ create_compute_pipeline(compute_pipeline_resources &resources,
                          nullptr);
 
   const auto shader_module{create_shader_module(
-      resources.device, "assets/shaders/computeShader.spv")};
+      resources.device, "assets/shaders/compute_shader.spv")};
+
   if (!shader_module) {
     std::println("Failed to create compute shader");
     return std::unexpected(shader_module.error());

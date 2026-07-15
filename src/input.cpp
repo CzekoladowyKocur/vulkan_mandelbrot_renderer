@@ -1,4 +1,4 @@
-#include "include/input.hpp"
+#include "input.hpp"
 #include <utility>
 
 void input::set_key_state(const key_code code, const bool pressed) noexcept {

@@ -1,4 +1,4 @@
-#include "include/vulkan_context.hpp"
+#include "vulkan_context.hpp"
 #include <algorithm>
 #include <array>
 #include <cstring>
@@ -8,27 +8,23 @@
 #include <utility>
 #include <vector>
 
+namespace {
 #ifdef APP_DEBUG
-static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_report_callback(
-    const VkDebugReportFlagsEXT flags,
-    const VkDebugReportObjectTypeEXT object_type, const std::uint64_t object,
-    const std::size_t location, const std::int32_t message_code,
-    const char *const layer_prefix, const char *const message,
+VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_utils_callback(
+    const VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    const VkDebugUtilsMessageTypeFlagsEXT message_types,
+    const VkDebugUtilsMessengerCallbackDataEXT *const callback_data,
     void *const user_data) {
-  (void)object;
-  (void)location;
-  (void)message_code;
-  (void)layer_prefix;
+  (void)message_severity;
+  (void)message_types;
   (void)user_data;
 
-  if (flags) {
-    std::println("VulkanDebugCallback: Object Type: {} Message: {}",
-                 static_cast<int>(object_type), message);
-  }
+  std::println("VulkanDebugCallback: {}", callback_data->pMessage);
 
   return VK_FALSE;
 }
 #endif
+} // namespace
 
 std::expected<vulkan_context, std::error_code>
 vulkan_context::create(vulkan_context_props &&props) noexcept {
@@ -73,7 +69,7 @@ std::expected<void, std::error_code> vulkan_context::create_instance(
 #ifdef APP_DEBUG
   required_extensions.insert(
       required_extensions.end(),
-      {VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+      {VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME});
   const std::vector<const char *> requested_layers{
       "VK_LAYER_KHRONOS_validation"};
@@ -144,6 +140,23 @@ std::expected<void, std::error_code> vulkan_context::create_instance(
     }
   }
 
+#ifdef APP_DEBUG
+  const VkDebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{
+      .sType{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT},
+      .pNext{nullptr},
+      .flags{},
+      .messageSeverity{VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT},
+      .messageType{VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                   VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                   VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT},
+      .pfnUserCallback{vulkan_debug_utils_callback},
+      .pUserData{nullptr}};
+  const void *const instance_create_pnext{&debug_messenger_create_info};
+#else
+  constexpr void *instance_create_pnext{nullptr};
+#endif
+
   const VkApplicationInfo application_info{
       .sType{VK_STRUCTURE_TYPE_APPLICATION_INFO},
       .pNext{nullptr},
@@ -155,7 +168,7 @@ std::expected<void, std::error_code> vulkan_context::create_instance(
 
   const VkInstanceCreateInfo instance_create_info{
       .sType{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO},
-      .pNext{nullptr},
+      .pNext{instance_create_pnext},
       .flags{instance_flags},
       .pApplicationInfo{&application_info},
       .enabledLayerCount{
@@ -174,21 +187,12 @@ std::expected<void, std::error_code> vulkan_context::create_instance(
   }
 
 #ifdef APP_DEBUG
-  const auto create_debug_report_callback{
-      reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(
-          vkGetInstanceProcAddr(m_instance, "vkCreateDebugReportCallbackEXT"))};
-  if (create_debug_report_callback != nullptr) {
-    const VkDebugReportCallbackCreateInfoEXT debug_report_create_info{
-        .sType{VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT},
-        .pNext{nullptr},
-        .flags{VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
-               VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT},
-        .pfnCallback{reinterpret_cast<PFN_vkDebugReportCallbackEXT>(
-            vulkan_debug_report_callback)},
-        .pUserData{nullptr}};
-
-    create_debug_report_callback(m_instance, &debug_report_create_info, nullptr,
-                                 &m_debug_report_callback);
+  const auto create_debug_utils_messenger{
+      reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+          vkGetInstanceProcAddr(m_instance, "vkCreateDebugUtilsMessengerEXT"))};
+  if (create_debug_utils_messenger != nullptr) {
+    create_debug_utils_messenger(m_instance, &debug_messenger_create_info,
+                                 nullptr, &m_debug_messenger);
   }
 #endif
 
@@ -379,7 +383,7 @@ std::expected<void, std::error_code> vulkan_context::create_command_pools() {
 vulkan_context::vulkan_context(vulkan_context &&other) noexcept
     : m_instance{other.m_instance},
 #ifdef APP_DEBUG
-      m_debug_report_callback{other.m_debug_report_callback},
+      m_debug_messenger{other.m_debug_messenger},
 #endif
       m_physical_device{other.m_physical_device},
       m_graphics_queue_family{other.m_graphics_queue_family},
@@ -390,7 +394,7 @@ vulkan_context::vulkan_context(vulkan_context &&other) noexcept
       m_compute_command_pool{other.m_compute_command_pool} {
   other.m_instance = VK_NULL_HANDLE;
 #ifdef APP_DEBUG
-  other.m_debug_report_callback = VK_NULL_HANDLE;
+  other.m_debug_messenger = VK_NULL_HANDLE;
 #endif
   other.m_physical_device = VK_NULL_HANDLE;
   other.m_graphics_queue_family = {};
@@ -411,7 +415,7 @@ vulkan_context &vulkan_context::operator=(vulkan_context &&other) noexcept {
 
   m_instance = other.m_instance;
 #ifdef APP_DEBUG
-  m_debug_report_callback = other.m_debug_report_callback;
+  m_debug_messenger = other.m_debug_messenger;
 #endif
   m_physical_device = other.m_physical_device;
   m_graphics_queue_family = other.m_graphics_queue_family;
@@ -424,7 +428,7 @@ vulkan_context &vulkan_context::operator=(vulkan_context &&other) noexcept {
 
   other.m_instance = VK_NULL_HANDLE;
 #ifdef APP_DEBUG
-  other.m_debug_report_callback = VK_NULL_HANDLE;
+  other.m_debug_messenger = VK_NULL_HANDLE;
 #endif
   other.m_physical_device = VK_NULL_HANDLE;
   other.m_graphics_queue_family = {};
@@ -453,17 +457,16 @@ void vulkan_context::destroy() noexcept {
   }
 
 #ifdef APP_DEBUG
-  if (m_debug_report_callback != VK_NULL_HANDLE) {
-    const auto destroy_debug_report_callback{
-        reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(
+  if (m_debug_messenger != VK_NULL_HANDLE) {
+    const auto destroy_debug_utils_messenger{
+        reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
             vkGetInstanceProcAddr(m_instance,
-                                  "vkDestroyDebugReportCallbackEXT"))};
-    if (destroy_debug_report_callback != nullptr) {
-      destroy_debug_report_callback(m_instance, m_debug_report_callback,
-                                    nullptr);
+                                  "vkDestroyDebugUtilsMessengerEXT"))};
+    if (destroy_debug_utils_messenger != nullptr) {
+      destroy_debug_utils_messenger(m_instance, m_debug_messenger, nullptr);
     }
   }
-  m_debug_report_callback = VK_NULL_HANDLE;
+  m_debug_messenger = VK_NULL_HANDLE;
 #endif
 
   vkDestroyInstance(m_instance, nullptr);

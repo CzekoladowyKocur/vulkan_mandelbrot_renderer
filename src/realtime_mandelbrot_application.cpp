@@ -1,4 +1,4 @@
-#include "include/realtime_mandelbrot_application.hpp"
+#include "realtime_mandelbrot_application.hpp"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -703,13 +703,13 @@ realtime_mandelbrot_application::create_pipeline_resources(
   }
 
   const auto vertex_shader_module{create_shader_module(
-      context.device(), "assets/shaders/vertexShader.spv")};
+      context.device(), "assets/shaders/vertex_shader.spv")};
   if (!vertex_shader_module) {
     return std::unexpected{vertex_shader_module.error()};
   }
 
   const auto fragment_shader_module{create_shader_module(
-      context.device(), "assets/shaders/fragmentShader.spv")};
+      context.device(), "assets/shaders/fragment_shader.spv")};
   if (!fragment_shader_module) {
     vkDestroyShaderModule(context.device(), *vertex_shader_module, nullptr);
     return std::unexpected{fragment_shader_module.error()};

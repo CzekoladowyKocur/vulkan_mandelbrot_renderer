@@ -1,4 +1,4 @@
-#include "include/window.hpp"
+#include "window.hpp"
 
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -6,7 +6,7 @@
 #include <array>
 #include <utility>
 
-#include "include/VulkanTypes.hpp"
+#include "vulkan_types.hpp"
 #include <vulkan/vulkan_metal.h>
 
 struct macos_window_state {
@@ -107,7 +107,9 @@ struct macos_window_state {
 
 @end
 
-static void ensure_application_running() noexcept {
+namespace {
+
+void ensure_application_running() noexcept {
   if (NSApp != nil && [NSApp isRunning]) {
     return;
   }
@@ -118,7 +120,7 @@ static void ensure_application_running() noexcept {
   [NSApp activateIgnoringOtherApps:YES];
 }
 
-[[nodiscard]] static key_code
+[[nodiscard]] key_code
 key_code_from_ns_key(const unsigned short ns_key) noexcept {
   switch (ns_key) {
   case 0:
@@ -296,7 +298,7 @@ key_code_from_ns_key(const unsigned short ns_key) noexcept {
   }
 }
 
-[[nodiscard]] static std::pair<key_code, key_code>
+[[nodiscard]] std::pair<key_code, key_code>
 modifier_keys_from_ns_key(const unsigned short ns_key) noexcept {
   switch (ns_key) {
   case 56:
@@ -320,7 +322,7 @@ modifier_keys_from_ns_key(const unsigned short ns_key) noexcept {
   }
 }
 
-[[nodiscard]] static NSEventModifierFlags
+[[nodiscard]] NSEventModifierFlags
 modifier_flag_from_ns_key(const unsigned short ns_key) noexcept {
   switch (ns_key) {
   case 56:
@@ -339,6 +341,7 @@ modifier_flag_from_ns_key(const unsigned short ns_key) noexcept {
     return 0;
   }
 }
+} // namespace
 
 struct window::detail final : macos_window_state {
   explicit detail(window_props &&props)
@@ -391,11 +394,11 @@ std::expected<void, std::error_code> window::initialize() noexcept {
         NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
         NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable};
 
-    NSWindow *const ns_window{
-        [[NSWindow alloc] initWithContentRect:content_rect
-                                    styleMask:style_mask
-                                      backing:NSBackingStoreBuffered
-                                        defer:NO]};
+    NSWindow *const ns_window{[[NSWindow alloc]
+        initWithContentRect:content_rect
+                  styleMask:style_mask
+                    backing:NSBackingStoreBuffered
+                      defer:NO]};
 
     if (ns_window == nil) {
       return std::unexpected{
@@ -417,8 +420,7 @@ std::expected<void, std::error_code> window::initialize() noexcept {
 
     [ns_window setContentView:view];
     [ns_window setDelegate:m_detail->delegate];
-    [ns_window
-        setTitle:[NSString stringWithUTF8String:m_detail->name.c_str()]];
+    [ns_window setTitle:[NSString stringWithUTF8String:m_detail->name.c_str()]];
     [ns_window center];
     [ns_window makeFirstResponder:view];
     [ns_window makeKeyAndOrderFront:nil];
@@ -427,8 +429,7 @@ std::expected<void, std::error_code> window::initialize() noexcept {
       [ns_window zoom:nil];
     }
 
-    [metal_layer
-        setContentsScale:[ns_window backingScaleFactor]];
+    [metal_layer setContentsScale:[ns_window backingScaleFactor]];
 
     m_detail->update_size();
 
@@ -461,11 +462,10 @@ void window::poll(const function_ref<void(const event &)> callback) noexcept {
     m_detail->callback = &callback;
 
     while (true) {
-      NSEvent *const ns_event{
-          [NSApp nextEventMatchingMask:NSEventMaskAny
-                             untilDate:nil
-                                inMode:NSDefaultRunLoopMode
-                               dequeue:YES]};
+      NSEvent *const ns_event{[NSApp nextEventMatchingMask:NSEventMaskAny
+                                                 untilDate:nil
+                                                    inMode:NSDefaultRunLoopMode
+                                                   dequeue:YES]};
 
       if (ns_event == nil) {
         break;

@@ -1,5 +1,5 @@
 #pragma once
-#include "include/VulkanTypes.hpp"
+#include "vulkan_types.hpp"
 #include <cstdint>
 #include <filesystem>
 #include <span>
@@ -42,8 +42,10 @@ private:
 
   [[nodiscard]] std::expected<void, std::error_code>
   create_instance(const std::span<const char *const> instance_extensions);
+
   [[nodiscard]] std::expected<void, std::error_code> select_physical_device();
   [[nodiscard]] std::expected<void, std::error_code>
+
   create_device(const bool presentation_required);
   [[nodiscard]] std::expected<void, std::error_code> create_command_pools();
 
@@ -52,7 +54,7 @@ private:
 private:
   VkInstance m_instance{VK_NULL_HANDLE};
 #ifdef APP_DEBUG
-  VkDebugReportCallbackEXT m_debug_report_callback{VK_NULL_HANDLE};
+  VkDebugUtilsMessengerEXT m_debug_messenger{VK_NULL_HANDLE};
 #endif
 
   VkPhysicalDevice m_physical_device{VK_NULL_HANDLE};
