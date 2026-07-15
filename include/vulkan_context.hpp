@@ -54,7 +54,7 @@ private:
 private:
   VkInstance m_instance{VK_NULL_HANDLE};
 #ifdef APP_DEBUG
-  VkDebugReportCallbackEXT m_debug_report_callback{VK_NULL_HANDLE};
+  VkDebugUtilsMessengerEXT m_debug_messenger{VK_NULL_HANDLE};
 #endif
 
   VkPhysicalDevice m_physical_device{VK_NULL_HANDLE};
